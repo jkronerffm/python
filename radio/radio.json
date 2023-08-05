@@ -1,0 +1,30 @@
+{
+	"background": "background.jpg",
+    "sender": [
+        {
+            "name": "hr1",
+            "url": "http://metafiles.gl-systemhaus.de/hr/hr1_2.m3u",
+            "image": "hr1.jpeg"
+        },
+        {
+            "name": "hr3",
+            "url": "http://metafiles.gl-systemhaus.de/hr/hr3_2.m3u",
+            "image": "hr3.jpeg"
+        },
+        {
+            "name": "ffh",
+            "url": "http://streams.ffh.de/radioffh/mp3/hqlivestream.m3u",
+            "image": ""
+        },
+        {
+            "name": "Bob",
+            "url": "http://streams.radiobob.de/100/mp3-128/streams.radiobob.de/play.m3u",
+            "image": ""
+        },
+        {
+            "name": "radio maria",
+            "url": "https://www.youtube.com/watch?v=FR33mY1MThY",
+            "image": ""
+        }
+    ]
+}

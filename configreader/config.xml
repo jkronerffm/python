@@ -1,0 +1,10 @@
+<config>
+    <Paths>
+        <home_dir>/Users</home_dir>
+        <my_dir>%(home_dir)s/lumberjack</my_dir>
+        <my_pictures>%(my_dir)s/Pictures</my_pictures>
+    </Paths>
+    <Escape>
+        <gain>80%%</gain>
+    </Escape>
+</config>

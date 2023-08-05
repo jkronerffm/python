@@ -1,0 +1,37 @@
+<reminder lang="de" priorNotice="5">
+<!--
+    <job type='date' name='job1' date='13.02.2023 14:30'>
+        <item text="Welcome + Introductions"/>
+    </job>
+    <job type="cron" name='job2' daysOfWeek='mon-fri' hour="*" minute="*/2" active="False">
+        <item text="Refinement"/>
+    </job>
+    <job type="cron" name='job2.5' daysOfWeek="mon-fri" hour="10" minute="55">
+        <item text="gleich faengt das Daily an"/>
+    </job>
+    <job type="cron" name='job3' daysOfWeek="mon-fri" hour="11" minute="0">
+        <item text="jetzt ist das Daily meeting"/>
+    </job>
+    <job type="date" name="job4" date="15.02.2023 9:25">
+        <item text="gleich faengt die Retro an"/>
+    </job>
+    <job type="date" name="job5.0" date="16.02.2023 12:55">
+        <item text="In Kürze beginnt das nächste Meeting"/>
+    </job>
+    <job type="date" name="job5.1" date="16.02.2023 13:00">
+        <item text="Jetzt beginnt das Meeting Teams approval app future session"/>
+    </job>
+-->
+    <appointment id="1">
+        <when every="weekday" at="11:00"/>
+        <what>Daily meeting</what>
+    </appointment>
+    <appointment id="2">
+        <when on="16.03.2023" at="13:00"/>
+        <what>Meeting Teams approval app future session</what>
+    </appointment>
+    <appointment id="3">
+        <when on="20.02.2023" at="14:00"/>
+        <what>General refinement</what>
+    </appointment>
+</reminder>

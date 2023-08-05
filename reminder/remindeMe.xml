@@ -1,0 +1,8 @@
+<reminder>
+    <job type='date' date='13.03.2023 14:30'>
+        <item text="Welcome + Introductions"/>
+    </job>
+    <job type="cron" daysOfWeek="mon-fri" hour="11" minute="0">
+        <item text="Daily meeting"/>
+    </job>
+</reminder>
