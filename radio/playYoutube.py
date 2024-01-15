@@ -22,7 +22,7 @@ def getYoutubeStreamUrl(url):
 
 if __name__ == "__main__":
     logging.basicConfig(level = logging.DEBUG)
-    youtubeId = "FR33mY1MThY"
+    youtubeId = "hM32YSzZhbo"
     url = "https://www.youtube.com/watch?v=%s" % youtubeId
 
     youtubeStreamUrl = getYoutubeStreamUrl(url)

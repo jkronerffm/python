@@ -4,7 +4,7 @@
       {
         "name": "start_dauernd",
         "type": "cron",
-        "active": "True",
+        "active": "False",
         "runtime": {
           "day_of_week": "*",
           "hour": "*",
@@ -16,9 +16,11 @@
         "type": "date",
         "active": "True",
         "runtime": {
-          "date": "2023-02-09",
-          "time": "14:00:00"
-         }
+          "date": "2024-01-12",
+          "time": "16:27:00"
+         },
+        "duration": "1",
+        "sender": "hr3"
       },
       {
         "name": "start_Mittagspause",
@@ -26,8 +28,8 @@
         "active": "True",
         "runtime": {
           "day_of_week": "mon-fri",
-          "hour": "12",
-          "minute": "0"
+          "hour": "19",
+          "minute": "20"
         },
         "duration": "30"
       },

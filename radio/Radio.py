@@ -47,16 +47,20 @@ def get_VolumeValue(pos):
 def check_clickOnVolumeSettings(pos):
     global focusOnVolumeSettings
     global volume
-    x0 = 320
+    global screenWidth
+    global screenHeight
+    global volDistX
+    global volDistY
+    x0 = screenWidth - volDistX
     w = 190
     h = 60
-    y0 = 470 - h
+    y0 = screenHeight - volDistY - h
     focusOnVolumeSettings = False
     focusOnVolumeSettings =  point_in_rect(pos, [x0, y0, w, h])
     if (focusOnVolumeSettings):
-        x = pos[0] - 320
+        x = pos[0] - x0
         v = math.floor(x/20)
-        ymax = 470 - (10 + v*5)
+        ymax = y0 - (10 + v*5)
         left,top, width, height = [x0, y0, w, h]
         right = x0 + w
         bottom = y0 + h
@@ -182,6 +186,10 @@ def draw_radio():
     global focusOnSender
     global volume
     global radioPlayer
+    global volDistX
+    global volDistY
+    global spkDistX
+    global spkDistY
     pygame.draw.rect(screen,WHITE, (2,2,screenWidth - 4, screenHeight - 4))
     x = screenBorder
     y = screenBorder
@@ -199,15 +207,15 @@ def draw_radio():
     pygame.draw.circle(screen, RED, closeButtonPos, 15)
     # volume settings
     # f(x) = 10 + x * 5
-    x = 320
-    y = 470
+    x = screenWidth - volDistX
+    y = screenHeight - volDistY
 
     polygon = draw_Volume_Range(screen,(x,y), (20,5), 10, 10, 10, RED)
 
     volumestr = "{0}".format(volume)
     textRectVolume = draw_textRect((60, 30),volumestr, WHITE, BLACK, WHITE, font18, 128,[5,5])
     screen.blit(textRectVolume, (x+200-10, 430))
-    draw_speaker(screen, (295, 430), 10, (160, 0, 0,200))
+    draw_speaker(screen, (screenWidth - spkDistX, screenHeight - spkDistY), 10, (160, 0, 0,200))
 
 def draw_clock():
     global screen
@@ -229,16 +237,33 @@ def draw_clock():
     screen.blit(calendar, [x, y])
 
 def startHandler(job):
-    print("startHandler(job=%s)" % (str(job)))
+    global radioPlayer
+    global currentsender
+    global active
+    print("startHandler" + str(job))
+    if job.name().startswith('start_'):
+        sender = job.sender() if job.sender() != None else currentsender['name']
+        currentsender = radioPlayer.getSenderByName(sender)
+        radioPlayer.play(sender)
+        active = True
+    elif job.name().startswith('stop_') and active:
+        radioPlayer.stop()
+        active = False
     
 def onAddJob(name, job):
+    global radioScheduler
     print("onAddJob(name=%s, job=%s)" % (name, str(job)))
 ##    job.setHandler(startHandler)
     
 logging.basicConfig(level = logging.DEBUG)
 pygame.init()
-screenWidth = 800
-screenHeight = 480
+screenWidth = 1024
+screenHeight = 768
+volDistX = 300
+volDistY = 10
+spkDistX = 350
+spkDistY = 50
+
 screenBorder = 10
 volume = 0
 screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
@@ -249,6 +274,8 @@ senderWidth = (screenWidth - 2 * screenBorder) / len(radioPlayer.sender())
 load_Settings()
 radioScheduler = RadioScheduler('waketime.json')
 radioScheduler.setAddJobHandler(onAddJob)
+radioScheduler.setJobHandler(startHandler)
+radioScheduler.set_testing()
 radioScheduler.start()
 running = True
 active = False

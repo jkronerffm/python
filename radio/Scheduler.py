@@ -124,6 +124,8 @@ class RadioJob:
         self._active = eval(job['active'])
         self._type = job['type']
         self._runtime = self.createRunTime(job['runtime'])
+        self._sender = job['sender'] if 'sender' in job else None
+        print("__init_constructor__(sender=%s)" % (self.sender()))
         logging.debug("%s.__init_constructor__(runtime=%s)" % (self.__class__.__name__, str(self._runtime)))
         if "duration" in job:
             self._duration = eval(job['duration'])
@@ -135,10 +137,12 @@ class RadioJob:
         self._active = copy.deepcopy(job.active())
         self._type = copy.deepcopy(job.type())
         self._runtime = copy.deepcopy(job.runtime())
+        self._sender = copy.deepcopy(job.sender())
+        print("__copy_constructor(sender =", self.sender(),")")
         self._duration = copy.deepcopy(job.duration())
         
     def as_dict(self):
-        return {'name': self.name(), 'type': self.type(), 'active': self.active(), 'runtime': self.runtime().as_dict()}
+        return {'name': self.name(), 'type': self.type(), 'active': self.active(), 'runtime': self.runtime().as_dict(), 'sender': self.sender()}
     
     def createRunTime(self, runtime) -> RunTime:
         logging.debug("%s.createRunTime(runtime=%s)" % (self.__class__.__name__, str(runtime)))
@@ -172,12 +176,18 @@ class RadioJob:
 
     def set_duration(self, value):
         self._duration = value
+
+    def set_sender(self, value):
+        self._sender = value
         
     def active(self):
         return self._active
 
     def duration(self):
         return self._duration
+    
+    def sender(self):
+        return self._sender
     
     def type(self):
         return self._type
@@ -196,11 +206,12 @@ class RadioJob:
         return None
             
     def __str__(self):
-        return "<%s: name=%s, active=%s, type=%s, runtime=%s>" % (self.__class__.__name__,
+        return "<%s: name=%s, active=%s, type=%s, runtime=%s, sender=%s>" % (self.__class__.__name__,
                                                                   self._name,
                                                                   self._active,
                                                                   self._type,
-                                                                  self._runtime)
+                                                                  self._runtime,
+                                                                  self._sender)
     
 class RadioScheduler:
     def __init__(self, configFile):
@@ -255,7 +266,7 @@ class RadioScheduler:
                 
     def jobCallback(self, radioJob, job):
         logging.debug("%s.jobCallback(radioJob= %s, job=%s)" % (self.__class__.__name__,str(radioJob),str(job)))
-        if radioJob.duration() == 0:
+        if radioJob.name().startswith("start_") and radioJob.duration() == 0:
             return
         
         now = datetime.datetime.now()
@@ -273,11 +284,18 @@ class RadioScheduler:
             time = str(later.time())
             logging.debug("%s.jobCallback(date=%s, time=%s)" % (self.__class__.__name__, date, time))
             stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
+            stopJob.set_sender(None)
             stopJob.set_duration(0)
             logging.debug("%s.jobCallback(stopJob=%s)" % (self.__class__.__name__,stopJob))
-            ## TODO: create additional job to stop radio at <later>
+            stopJob.createJob(self._baseScheduler)
+            self._jobHandler(radioJob)
         else:
-            logging.debug("%s.jobCallback(): calling job is not a start job or next runtime (%s) is before stop time (%s)" % (self.__class__.__name__, nextRunTime, later))
+            print("%s.jobCallback(): job=%s" % (self.__class__.__name__, str(radioJob)))
+            if radioJob.name().startswith("stop_"):
+                print("%s.jobCallback(): call jobHandler to stop radio for job(%s)" % (self.__class__.__name__, str(radioJob)))
+                self._jobHandler(radioJob)
+            else:
+                logging.debug("%s.jobCallback(): calling job is not a start job or next runtime (%s) is before stop time (%s)" % (self.__class__.__name__, nextRunTime, later))
         
     def nextJob(self):
         allJobs = self._baseScheduler.get_jobs()
