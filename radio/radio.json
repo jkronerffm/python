@@ -25,6 +25,11 @@
             "name": "radio maria",
             "url": "http://dreamsiteradiocp.com:8060",
             "image": ""
+        },
+	{
+            "name": "my music",
+            "url": "file:///home/jkroner/Music/myMusic.m3u",
+            "image": ""
         }
     ]
 }

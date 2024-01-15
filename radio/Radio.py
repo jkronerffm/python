@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/jkroner/Documents/python/have_internet")
 import json
 import pygame
 import math
@@ -7,6 +9,7 @@ from ctypes import cast, POINTER
 from RadioPlayer import *
 import logging
 from Scheduler import RadioScheduler
+from have_internet import haveInternet
 
 #from comtypes import *
 #from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -29,6 +32,8 @@ def check_clickOnSender(pos):
     focusOnSender = False
     for sender in radioPlayer.sender():
         if point_in_rect(pos, sender['rect']):
+            if not haveInternet():
+                sender = radioPlayer.getSenderByName('my music')
             currentsender = sender
             focusOnSender = True
             radioPlayer.play(currentsender['name'])
@@ -39,7 +44,9 @@ def set_Volume(value):
     radioPlayer.setVolume(value)
 
 def get_VolumeValue(pos):
-    x = pos[0] - 320
+    global screenWidth
+    global volDistX
+    x = pos[0] - (screenWidth - volDistX)
     value = round(x*100/190)
     set_Volume(value)
     return value
@@ -214,7 +221,7 @@ def draw_radio():
 
     volumestr = "{0}".format(volume)
     textRectVolume = draw_textRect((60, 30),volumestr, WHITE, BLACK, WHITE, font18, 128,[5,5])
-    screen.blit(textRectVolume, (x+200-10, 430))
+    screen.blit(textRectVolume, (x+200-10, y - 30))
     draw_speaker(screen, (screenWidth - spkDistX, screenHeight - spkDistY), 10, (160, 0, 0,200))
 
 def draw_clock():
@@ -242,9 +249,12 @@ def startHandler(job):
     global active
     print("startHandler" + str(job))
     if job.name().startswith('start_'):
-        sender = job.sender() if job.sender() != None else currentsender['name']
-        currentsender = radioPlayer.getSenderByName(sender)
-        radioPlayer.play(sender)
+        sendername = job.sender() if job.sender() != None else currentsender['name']
+        sender = radioPlayer.getSenderByName(sendername)
+        if not haveInternet():
+            sender = radioPlayer.getSenderByName('my music')
+        currentsender = sender
+        radioPlayer.play(sender['name'])
         active = True
     elif job.name().startswith('stop_') and active:
         radioPlayer.stop()
@@ -257,8 +267,12 @@ def onAddJob(name, job):
     
 logging.basicConfig(level = logging.DEBUG)
 pygame.init()
-screenWidth = 1024
-screenHeight = 768
+if len(sys.argv) >= 2:
+    screenWidth = int(sys.argv[1])
+    screenHeight = int(sys.argv[2])
+else:
+    screenWidth = 1024
+    screenHeight = 768
 volDistX = 300
 volDistY = 10
 spkDistX = 350
