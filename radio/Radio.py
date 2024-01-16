@@ -1,5 +1,6 @@
 import sys
 sys.path.append("/home/jkroner/Documents/python/have_internet")
+from os.path import isfile
 import json
 import pygame
 import math
@@ -10,9 +11,7 @@ from RadioPlayer import *
 import logging
 from Scheduler import RadioScheduler
 from have_internet import haveInternet
-
-#from comtypes import *
-#from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from urllib.parse import unquote, urlparse
 
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
@@ -177,12 +176,44 @@ def draw_Volume_Range(surface, pos, dist, width, yDef, num, color):
     polygon = [(px0, py0), (px0, py0 - 10), (px1, py1), (px1, py0)]
     draw_polygon_alpha(surface, (255,255,255,128), polygon)
 
+def draw_sender(sender, x, y):
+    global screenWidth, screenHeight
+    global screenBorder
+    global senderWidth, senderHeight
+    global screen
+    global BLACK, WHITE, RED
+
+    sender['rect'] = pygame.Rect(x,y,senderWidth, senderHeight)
+    imageDrawn = False
+    if sender['image'] != '':
+        imageurl = sender['image']
+        imagepath = unquote(urlparse(imageurl).path)
+        if isfile(imagepath):
+            image = pygame.image.load(imagepath)
+            (width, height) = image.get_size()
+            imageWidth = senderWidth
+            imageHeight = imageWidth * height / width
+            scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
+            screen.blit(scaledImage, sender['rect'].topleft)
+            imageDrawn = True
+    if not imageDrawn:
+        s = draw_textRect(sender['rect'].size,sender['name'],WHITE, BLACK, BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
+        screen.blit(s, sender['rect'].topleft)
+    
+    x = x + senderWidth
+    if x > (screenWidth - screenBorder):
+        x = screenBorder
+        y = y + senderHeight
+    return (x, y)
+    
 def draw_radio():
     global x, y
     global screen
     global screenWidth, screenHeight
+    global screenBorder
     global data
     global senderWidth
+    global senderHeight
     global font14, font18
     global currentname
     global closeButton
@@ -202,10 +233,7 @@ def draw_radio():
     y = screenBorder
     screen.blit(image, imagePos)
     for sender in radioPlayer.sender():
-        sender['rect'] = pygame.Rect(x,y,senderWidth, 60)
-        s = draw_textRect(sender['rect'].size,sender['name'],WHITE, BLACK, BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
-        screen.blit(s, sender['rect'].topleft)
-        x = x + senderWidth
+        (x, y) = draw_sender(sender, x, y)
     currentname = font18.render(currentsender['name'], True, BLACK)
     titleRect = draw_textRect((250,60), currentsender['name'], WHITE, BLACK, WHITE, font18,200,(10,10), True)
     screen.blit(titleRect, [350, 175])
@@ -284,7 +312,8 @@ screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
 focusOnVolumeSettings = False
 
 radioPlayer = RadioPlayer("radio.json")
-senderWidth = (screenWidth - 2 * screenBorder) / len(radioPlayer.sender())
+senderWidth = (screenWidth - 2 * screenBorder) / 6
+senderHeight = 60
 load_Settings()
 radioScheduler = RadioScheduler('waketime.json')
 radioScheduler.setAddJobHandler(onAddJob)
@@ -340,4 +369,5 @@ while running:
         continue
 logging.debug("exit the pygame app")
 pygame.quit()
+radioPlayer.stop()
 sys.exit()
