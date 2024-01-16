@@ -4,22 +4,22 @@
         {
             "name": "hr1",
             "url": "http://metafiles.gl-systemhaus.de/hr/hr1_2.m3u",
-            "image": "hr1.jpeg"
+            "image": "file:///home/jkroner/Documents/python/radio/pics/hr1.png"
         },
         {
             "name": "hr3",
             "url": "http://metafiles.gl-systemhaus.de/hr/hr3_2.m3u",
-            "image": "hr3.jpeg"
+            "image": "file:///home/jkroner/Documents/python/radio/pics/hr3.png"
         },
         {
             "name": "ffh",
             "url": "http://streams.ffh.de/radioffh/mp3/hqlivestream.m3u",
-            "image": ""
+            "image": "file:///home/jkroner/Documents/python/radio/pics/ffh.svg"
         },
         {
             "name": "Bob",
             "url": "http://streams.radiobob.de/100/mp3-128/streams.radiobob.de/play.m3u",
-            "image": ""
+            "image": "file:///home/jkroner/Documents/python/radio/pics/radio_bob.png"
         },
         {
             "name": "radio maria",
