@@ -332,5 +332,6 @@ while running:
             buttonDown = False
     pygame.display.flip()
     clock.tick(60)
-
+logging.debug("exit the pygame app")
 pygame.quit()
+sys.exit()

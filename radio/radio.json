@@ -1,5 +1,5 @@
 {
-	"background": "background.jpg",
+    "background": "background.jpg",
     "sender": [
         {
             "name": "hr1",
@@ -28,7 +28,7 @@
         },
 	{
             "name": "my music",
-            "url": "file:///home/jkroner/Music/myMusic.m3u",
+            "url": "file:///home/jkroner/Documents/python/radio/music",
             "image": ""
         }
     ]
