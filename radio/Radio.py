@@ -309,29 +309,35 @@ closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 
 buttonDown=False
 logging.debug("currentsender=%s" % currentsender)
 while running:
-    screen.fill(BLACK)
-    if active:
-        draw_radio()
-    else:
-        draw_clock()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running=False
-            break;
-        elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-            if not check_click(event.pos):
-                active=True
-            else:
-                buttonDown=True
-            break;
-        elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
-            if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
-                volume = get_VolumeValue(event.pos)
-            break;
-        elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-            buttonDown = False
-    pygame.display.flip()
-    clock.tick(60)
+    try:
+        screen.fill(BLACK)
+        if active:
+            draw_radio()
+        else:
+            draw_clock()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                logging.debug("quit pygame")
+                running=False
+                break;
+            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                if not check_click(event.pos):
+                    active=True
+                else:
+                    buttonDown=True
+                break;
+            elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
+                if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
+                    volume = get_VolumeValue(event.pos)
+                break;
+            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
+                buttonDown = False
+    
+        pygame.display.flip()
+        clock.tick(60)
+    except KeyboardInterrupt:
+        running = False
+        continue
 logging.debug("exit the pygame app")
 pygame.quit()
 sys.exit()
