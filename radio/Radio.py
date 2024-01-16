@@ -185,6 +185,8 @@ def draw_sender(sender, x, y):
 
     sender['rect'] = pygame.Rect(x,y,senderWidth, senderHeight)
     imageDrawn = False
+    imageWidth = senderWidth
+    imageHeight = 60
     if sender['image'] != '':
         imageurl = sender['image']
         imagepath = unquote(urlparse(imageurl).path)
@@ -194,6 +196,7 @@ def draw_sender(sender, x, y):
             imageWidth = senderWidth
             imageHeight = imageWidth * height / width
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
+            sender['rect'] = pygame.Rect(x, y, imageWidth, imageHeight)
             screen.blit(scaledImage, sender['rect'].topleft)
             imageDrawn = True
     if not imageDrawn:
@@ -204,7 +207,7 @@ def draw_sender(sender, x, y):
     if x > (screenWidth - screenBorder):
         x = screenBorder
         y = y + senderHeight
-    return (x, y)
+    return (x, y, imageWidth, imageHeight)
     
 def draw_radio():
     global x, y
@@ -231,12 +234,15 @@ def draw_radio():
     pygame.draw.rect(screen,WHITE, (2,2,screenWidth - 4, screenHeight - 4))
     x = screenBorder
     y = screenBorder
+    topY = 0
     screen.blit(image, imagePos)
     for sender in radioPlayer.sender():
-        (x, y) = draw_sender(sender, x, y)
+        (x, y, imageWidth, imageHeight) = draw_sender(sender, x, y)
+        if (y + imageHeight) > topY:
+            topY = y + imageHeight
     currentname = font18.render(currentsender['name'], True, BLACK)
     titleRect = draw_textRect((250,60), currentsender['name'], WHITE, BLACK, WHITE, font18,200,(10,10), True)
-    screen.blit(titleRect, [350, 175])
+    screen.blit(titleRect, [350, topY + 20])
     closeButton = pygame.draw.circle(screen, RED, closeButtonPos, 25)
     pygame.draw.circle(screen, WHITE, closeButtonPos, 20)
     pygame.draw.circle(screen, RED, closeButtonPos, 15)
