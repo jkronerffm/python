@@ -1,0 +1,25 @@
+{
+    "window":
+    {
+        "colours":
+        {
+            "dark_bg": "#21282D",
+            "normal_border": "#999999"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "10",
+            "border_width": "1",
+            "shadow_width": "15",
+            "title_bar_height": "20"
+        }
+    },
+    "window.#tile_bar":
+    {
+        "misc":
+        {
+            "text_horiz_alignment": "center"
+        }
+    }
+}
