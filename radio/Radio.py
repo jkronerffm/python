@@ -277,27 +277,35 @@ def draw_clock():
     y = y + height + 20
     screen.blit(calendar, [x, y])
 
+def jobHandler(job):
+    global active
+    if job.name().startswith('start'):
+        startHandler(job)
+    elif job.name().startswith('stop') and active:
+        stopHandler(job)
+        
 def startHandler(job):
     global radioPlayer
     global currentsender
     global active
-    print("startHandler" + str(job))
-    if job.name().startswith('start_'):
-        sendername = job.sender() if job.sender() != None else currentsender['name']
-        sender = radioPlayer.getSenderByName(sendername)
-        if not haveInternet():
-            sender = radioPlayer.getSenderByName('my music')
-        currentsender = sender
-        radioPlayer.play(sender['name'])
-        active = True
-    elif job.name().startswith('stop_') and active:
-        radioPlayer.stop()
-        active = False
+    logging.debug("startHandler" + str(job))
+    sendername = job.sender() if job.sender() != None else currentsender['name']
+    sender = radioPlayer.getSenderByName(sendername)
+    if not haveInternet():
+        sender = radioPlayer.getSenderByName('my music')
+    currentsender = sender
+    radioPlayer.play(sender['name'])
+    active = True
+
+def stopHandler(job):
+    global radioPlayer
+    global active
+    radioPlayer.stop()
+    active = False
     
 def onAddJob(name, job):
     global radioScheduler
     print("onAddJob(name=%s, job=%s)" % (name, str(job)))
-##    job.setHandler(startHandler)
     
 logging.basicConfig(level = logging.DEBUG)
 pygame.init()
@@ -305,8 +313,8 @@ if len(sys.argv) >= 2:
     screenWidth = int(sys.argv[1])
     screenHeight = int(sys.argv[2])
 else:
-    screenWidth = 1024
-    screenHeight = 768
+    screenWidth = 800
+    screenHeight = 480
 volDistX = 300
 volDistY = 10
 spkDistX = 350
@@ -323,7 +331,7 @@ senderHeight = 60
 load_Settings()
 radioScheduler = RadioScheduler('waketime.json')
 radioScheduler.setAddJobHandler(onAddJob)
-radioScheduler.setJobHandler(startHandler)
+radioScheduler.setJobHandler(jobHandler)
 radioScheduler.set_testing()
 radioScheduler.start()
 running = True
