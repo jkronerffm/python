@@ -4,7 +4,7 @@
       {
         "name": "start_dauernd",
         "type": "cron",
-        "active": "False",
+        "active": false,
         "runtime": {
           "day_of_week": "*",
           "hour": "*",
@@ -14,7 +14,7 @@
       {
         "name": "start_once",
         "type": "date",
-        "active": "True",
+        "active": true,
         "runtime": {
           "date": "2024-01-12",
           "time": "16:27:00"
@@ -25,18 +25,18 @@
       {
         "name": "start_Mittagspause",
         "type": "cron",
-        "active": "True",
+        "active": true,
         "runtime": {
           "day_of_week": "mon-fri",
           "hour": "19",
-          "minute": "20"
+          "minute":"20"
         },
-        "duration": "30"
+        "duration":"30"
       },
       {
         "name": "start_workday_halfpastfive",
         "type": "cron",
-        "active": "True",
+        "active": true,
         "runtime": {
           "day_of_week": "mon-fri",
           "hour": "5",
@@ -47,7 +47,7 @@
       {
         "name": "start_workday_at_five",
         "type": "cron",
-        "active": "False",
+        "active": false,
         "runtime": {
           "day_of_week": "mon-fri",
           "hour": "5",
@@ -58,7 +58,7 @@
       {
         "name": "start_workday_at_six",
         "type": "cron",
-        "active": "False",
+        "active": false,
         "runtime": {
           "day_of_week": "mon-fri",
           "hour": "6",

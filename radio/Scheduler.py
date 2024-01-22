@@ -121,7 +121,7 @@ class RadioJob:
 
     def __init_constructor__(self, job):
         self._name = job['name']
-        self._active = eval(job['active'])
+        self._active = job['active']
         self._type = job['type']
         self._runtime = self.createRunTime(job['runtime'])
         self._sender = job['sender'] if 'sender' in job else None

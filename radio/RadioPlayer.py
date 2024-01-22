@@ -4,6 +4,7 @@ import json
 import logging
 from playYoutube import getYoutubeStreamUrl
 from fileListRandomizer import shufflePlayList
+import threading
 
 class RadioPlayer:
 
@@ -38,10 +39,14 @@ class RadioPlayer:
 
     def mediaPlayer(self):
         return self.player().get_media_player()
+
+    def media(self):
+        return self.mediaPlayer().get_media()
     
     def play(self, senderName):
         logging.debug("play(sender=%s)" % (senderName))
-        sender = self.getSenderByName(senderName)
+        sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName("my music")
+        
         if sender["name"] == "my music":
             self.playRandomized(sender["url"])
         else:
@@ -87,7 +92,11 @@ class RadioPlayer:
         for sender in self.sender():
             if sender["name"] == senderName:
                 return sender
-
+        return None
+    
+    def hasSenderWithName(self, senderName):
+        return self.getSenderByName(senderName) != None
+            
     def pause(self):
         self.player().pause()
         
@@ -98,11 +107,43 @@ class RadioPlayer:
     def getVolume(self):
         return self.mediaPlayer().audio_get_volume()
 
+def getMetaThread(radioPlayer, callbackFunction, ev):
+    print("enter thread...")
+    currentTitle = ""
+    while not ev.is_set():
+        try:
+            time.sleep(2)
+            media.parse_async()
+            sender = radioPlayer.media().get_meta(0)
+            title = radioPlayer.media().get_meta(12)
+            if title != currentTitle:
+                callbackFunction(sender, title)
+                currentTitle = title
+            time.sleep(3)
+        except:
+            pass
+    print("leave thread...")
+
+def metaCallback(sender, title):
+    print(f"sender {sender} is playing \"{title}\"")
+        
 if __name__ == "__main__":
+    ev = threading.Event()
     logging.basicConfig(level = logging.DEBUG)
     radioPlayer = RadioPlayer("radio.json")
-    sender = radioPlayer.getSenderByName("my music")
-    radioPlayer.playRandomized(sender["url"])
+    radioPlayer.play("ffh")
     radioPlayer.setVolume(50)
-    time.sleep(30)
+    media=radioPlayer.media()
+    time.sleep(5)
+    ev.clear()
+    t = threading.Thread(target = getMetaThread, args=(radioPlayer, metaCallback, ev))
+    t.run()
+    running = True
+    while running:
+        print(".", end="")
+        try:
+            sleep(5)
+        except KeyboardInterrupt:
+            running = False
+    ev.set()
     radioPlayer.stop()

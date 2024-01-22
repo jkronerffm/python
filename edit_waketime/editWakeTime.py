@@ -82,7 +82,7 @@ class UIEditWakeTime:
                                                            'top': 'top',
                                                            'top_target': self._labelType
                                                        })
-        
+        self._cronPanel = UIPanel(pygame.Rect((10, 2, 380, 
         
     def _initUI(self):
         logging.debug('build UIElements')
