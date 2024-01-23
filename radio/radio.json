@@ -4,32 +4,32 @@
         {
             "name": "hr1",
             "url": "http://metafiles.gl-systemhaus.de/hr/hr1_2.m3u",
-            "image": "file:///home/jkroner/Documents/python/radio/pics/hr1.png"
+            "image": "file:///var/radio/pics/hr1.png"
         },
         {
             "name": "hr3",
             "url": "http://metafiles.gl-systemhaus.de/hr/hr3_2.m3u",
-            "image": "file:///home/jkroner/Documents/python/radio/pics/hr3.png"
+            "image": "file:///var/radio/pics/hr3.png"
         },
         {
             "name": "ffh",
             "url": "http://streams.ffh.de/radioffh/mp3/hqlivestream.m3u",
-            "image": "file:///home/jkroner/Documents/python/radio/pics/ffh.svg"
+            "image": "file:///var/radio/pics/ffh.svg"
         },
         {
             "name": "Bob",
             "url": "http://streams.radiobob.de/100/mp3-128/streams.radiobob.de/play.m3u",
-            "image": "file:///home/jkroner/Documents/python/radio/pics/radio_bob.png"
+            "image": "file:///var/radio/pics/radio_bob.png"
         },
         {
             "name": "radio maria",
             "url": "http://dreamsiteradiocp.com:8060",
-            "image": "file:///home/jkroner/Documents/python/radio/pics/radiomaria.jpeg"
+            "image": "file:///var/radio/pics/radiomaria.jpeg"
         },
 	{
             "name": "my music",
-            "url": "file:///home/jkroner/Documents/python/radio/music",
-            "image": ""
+            "url": "file:///var/radio/music/",
+            "image": "file:///var/radio/pics/playlist.png"
         }
     ]
 }

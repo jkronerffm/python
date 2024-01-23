@@ -12,6 +12,7 @@ import logging
 from Scheduler import RadioScheduler
 from have_internet import haveInternet
 from urllib.parse import unquote, urlparse
+from MetaBackgroundWorker import MetaBackgroundWorker
 
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
@@ -193,7 +194,7 @@ def draw_sender(sender, x, y):
         if isfile(imagepath):
             image = pygame.image.load(imagepath)
             (width, height) = image.get_size()
-            imageWidth = senderWidth
+            imageWidth = 64
             imageHeight = imageWidth * height / width
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
             sender['rect'] = pygame.Rect(x, y, imageWidth, imageHeight)
@@ -231,6 +232,7 @@ def draw_radio():
     global volDistY
     global spkDistX
     global spkDistY
+    
     pygame.draw.rect(screen,WHITE, (2,2,screenWidth - 4, screenHeight - 4))
     x = screenBorder
     y = screenBorder
@@ -241,8 +243,17 @@ def draw_radio():
         if (y + imageHeight) > topY:
             topY = y + imageHeight
     currentname = font18.render(currentsender['name'], True, BLACK)
-    titleRect = draw_textRect((250,60), currentsender['name'], WHITE, BLACK, WHITE, font18,200,(10,10), True)
-    screen.blit(titleRect, [350, topY + 20])
+
+    with MetaBackgroundWorker.Lock:
+        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, WHITE, BLACK, WHITE, font18,200,(10,10), True)
+        xSender = (screenWidth - 250) / 2
+        ySender = (screenHeight - topY - 240) / 2 + topY
+        screen.blit(senderRect, [xSender, ySender])
+        if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":
+            titleRect = draw_textRect((450, 60), MetaBackgroundWorker.CurrentTitle, WHITE, BLACK, WHITE, font18, 200, (10, 10), True)
+            xTitle = (screenWidth - 450) / 2
+            yTitle = ySender + 80
+            screen.blit(titleRect, [xTitle, yTitle])
     closeButton = pygame.draw.circle(screen, RED, closeButtonPos, 25)
     pygame.draw.circle(screen, WHITE, closeButtonPos, 20)
     pygame.draw.circle(screen, RED, closeButtonPos, 15)
@@ -306,82 +317,93 @@ def stopHandler(job):
 def onAddJob(name, job):
     global radioScheduler
     print("onAddJob(name=%s, job=%s)" % (name, str(job)))
-    
-logging.basicConfig(level = logging.DEBUG)
-pygame.init()
-if len(sys.argv) >= 2:
-    screenWidth = int(sys.argv[1])
-    screenHeight = int(sys.argv[2])
-else:
-    screenWidth = 800
-    screenHeight = 480
-volDistX = 300
-volDistY = 10
-spkDistX = 350
-spkDistY = 50
 
-screenBorder = 10
-volume = 0
-screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
-focusOnVolumeSettings = False
-
-radioPlayer = RadioPlayer("radio.json")
-senderWidth = (screenWidth - 2 * screenBorder) / 6
-senderHeight = 60
-load_Settings()
-radioScheduler = RadioScheduler('waketime.json')
-radioScheduler.setAddJobHandler(onAddJob)
-radioScheduler.setJobHandler(jobHandler)
-radioScheduler.set_testing()
-radioScheduler.start()
-running = True
-active = False
-WHITE=(255,255,255)
-BLACK = (0,0,0)
-RED = (255, 0, 0)
-clock = pygame.time.Clock()
-backgroundfile = radioPlayer.background()
-image = pygame.image.load(backgroundfile)
-image = pygame.transform.scale(image, [screenWidth, screenHeight])
-imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
-font14 = pygame.font.SysFont('Arial', 14, True, False)
-font18 = pygame.font.SysFont('Arial', 18, True, False)
-bigfont = pygame.font.SysFont('Arial', 128, True, False)
-medfont = pygame.font.SysFont('Arial', 64, True, False)
-closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 25)
-buttonDown=False
-logging.debug("currentsender=%s" % currentsender)
-while running:
-    try:
-        screen.fill(BLACK)
-        if active:
-            draw_radio()
-        else:
-            draw_clock()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                logging.debug("quit pygame")
-                running=False
-                break;
-            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
-                if not check_click(event.pos):
-                    active=True
-                else:
-                    buttonDown=True
-                break;
-            elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
-                if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
-                    volume = get_VolumeValue(event.pos)
-                break;
-            elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
-                buttonDown = False
+def metaCallback(sender, title):
+    if sender.endswith('.mp3'):
+        MetaBackgroundWorker.CurrentTitle = sender[:len(sender)-4].replace('__', ' - ').replace('_', ' ')
+        MetaBackgroundWorker.CurrentSender = "playlist"
+    else:
+        MetaBackgroundWorker.CurrentSender = sender
+        MetaBackgroundWorker.CurrentTitle  = title
+    MetaBackgroundWorker.ChangeEvent.set()
     
-        pygame.display.flip()
-        clock.tick(60)
-    except KeyboardInterrupt:
-        running = False
-        continue
-logging.debug("exit the pygame app")
-pygame.quit()
-radioPlayer.stop()
-sys.exit()
+if __name__ == "__main__": 
+    logging.basicConfig(level = logging.DEBUG)
+    pygame.init()
+    if len(sys.argv) >= 2:
+        screenWidth = int(sys.argv[1])
+        screenHeight = int(sys.argv[2])
+    else:
+        screenWidth = 800
+        screenHeight = 480
+    volDistX = 300
+    volDistY = 10
+    spkDistX = 350
+    spkDistY = 50
+
+    screenBorder = 10
+    volume = 0
+    screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
+    focusOnVolumeSettings = False
+
+    radioPlayer = RadioPlayer("radio.json")
+    senderWidth = (screenWidth - 2 * screenBorder) / 6
+    senderHeight = 60
+    load_Settings()
+    radioScheduler = RadioScheduler('waketime.json')
+    radioScheduler.setAddJobHandler(onAddJob)
+    radioScheduler.setJobHandler(jobHandler)
+    radioScheduler.set_testing()
+    radioScheduler.start()
+    running = True
+    active = False
+    WHITE=(255,255,255)
+    BLACK = (0,0,0)
+    RED = (255, 0, 0)
+    clock = pygame.time.Clock()
+    backgroundfile = radioPlayer.background()
+    image = pygame.image.load(backgroundfile)
+    image = pygame.transform.scale(image, [screenWidth, screenHeight])
+    imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
+    font14 = pygame.font.SysFont('Arial', 14, True, False)
+    font18 = pygame.font.SysFont('Arial', 18, True, False)
+    bigfont = pygame.font.SysFont('Arial', 128, True, False)
+    medfont = pygame.font.SysFont('Arial', 64, True, False)
+    closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 25)
+    buttonDown=False
+    MetaBackgroundWorker.Create(radioPlayer, metaCallback)
+    logging.debug("currentsender=%s" % currentsender)
+    while running:
+        try:
+            screen.fill(BLACK)
+            if active:
+                draw_radio()
+            else:
+                draw_clock()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    logging.debug("quit pygame")
+                    running=False
+                    break;
+                elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                    if not check_click(event.pos):
+                        active=True
+                    else:
+                        buttonDown=True
+                    break;
+                elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
+                    if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
+                        volume = get_VolumeValue(event.pos)
+                    break;
+                elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
+                    buttonDown = False
+        
+            pygame.display.flip()
+            clock.tick(60)
+        except KeyboardInterrupt:
+            running = False
+            continue
+    logging.debug("exit the pygame app")
+    pygame.quit()
+    radioPlayer.stop()
+    sys.exit()
