@@ -52,7 +52,7 @@ def build_row(job):
     row+= f"{rowIndent}</tr>\n"
     return row
 
-def build_form():
+def build_grid(computer):
     global data
     if data == None:
         data = readData(filepath = "/var/radio/conf/waketime.json")
@@ -61,7 +61,7 @@ def build_form():
         content+= build_row(job)
     return formTable % (content)
 
-def getData():
+def getData(computer):
     global data
     return data
 

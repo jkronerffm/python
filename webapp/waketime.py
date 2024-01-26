@@ -5,6 +5,11 @@ import formBuilder
 
 app = Flask(__name__)
 
-@app.route("/")
-def form():
-    return formBuilder.build_form()
+@app.route("/grid")
+def grid(computer):
+    return formBuilder.build_grid(computer)
+
+@app.route("/set_active")
+def set_active(name):
+    data = formBuilder.getData()
+    
