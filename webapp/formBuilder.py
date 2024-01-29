@@ -1,11 +1,24 @@
-import dictToObj
-from dictToObj import obj
+import sys
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
+from common import dictToObj
+from common.dictToObj import obj
 import json
 import logging
 
 formTable="""
 <html>
 <head>
+    <script type="text/javascript">
+      function setActive(name) {
+          const xhttp = new XMLHttpRequest();
+          xhttp.onload = function() {
+            alert(this.responseText);
+          };
+          xhttp.open("GET", "/radio/waketime/set_active?name=" + name, true);
+          xhttp.send();
+      }
+    </script>
     <meta name="viewport" content="width=device-width">
     <title>Weckzeiten</title>
 </head>
@@ -24,20 +37,16 @@ def readData(filepath):
     obj = None
     with open(filepath) as f:
         jsonStr = f.read()
-        logging.debug(f"readData(filepath={filepath}) => jsonStr={jsonStr}")
         jsonData = json.loads(jsonStr)
-        logging.debug(f"readData(filepath={filepath}) => jsonData={jsonStr}")
         o = dictToObj.obj(jsonData)
     return o
 
 def build_runtime(job):
     runtime = job.runtime
-    logging.debug(runtime)
     s = "%s %s:%s" % (runtime.day_of_week, "%02d" % (int(runtime.hour)) if runtime.hour != "*" else runtime.hour,"%02d" % (int(runtime.minute)) if runtime.minute != "*" else runtime.minute) if job.type == "cron" else f"{runtime.date} {runtime.time}"
     return s
 
 def build_row(job):
-    logging.debug(f"build_row(job={job})")
     indent = "    "
     rowIndent = 2*indent
     colIndent = 3*indent
@@ -48,11 +57,11 @@ def build_row(job):
     row+= f"{rowIndent}<tr>\n"
     row+= f"{colIndent}<td>{runtime}</td>\n"
     row+= f"{colIndent}<td>{duration}</td>\n"
-    row+= f"{colIndent}<td><input type=\"checkbox\" name=\"active\" {active} id=\"{job.name}\"/></td>\n"
+    row+= f"{colIndent}<td><input type=\"checkbox\" name=\"active\" {active} id=\"{job.name}\" onClick=\"setActive('{job.name}')\"/></td>\n"
     row+= f"{rowIndent}</tr>\n"
     return row
 
-def build_grid(computer):
+def build_grid():
     global data
     if data == None:
         data = readData(filepath = "/var/radio/conf/waketime.json")
@@ -61,7 +70,7 @@ def build_grid(computer):
         content+= build_row(job)
     return formTable % (content)
 
-def getData(computer):
+def getData():
     global data
     return data
 
