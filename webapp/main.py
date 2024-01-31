@@ -52,6 +52,34 @@ def doEditWaketime():
     name=request.args.get('name', default='', type=str)
     return waketime.build_edit(name)
 
+@app.route("/radio/waketime/save")
+def doSaveWaketime():
+    logging.debug(f"doSaveWaketime({request.args})")
+    name = request.args.get('name', '')
+    date = request.args.get('date', '')
+    time = request.args.getlist('time')
+    daysOfWeek=request.args.getlist('day_of_week')
+    logging.debug(f">> daysOfWeek={daysOfWeek}")
+    duration = request.args.get('duration', '1')
+    sender = request.args.get('sender', '')
+    theType= request.args.get('dateOrCron', "cron")
+    waketime.save(name, theType, date, time, daysOfWeek, duration, sender)
+    return redirect("/radio/waketime/grid")
+
+@app.route("/radio/waketime/delete")
+def doDeleteWaketime():
+    logging.debug(f"doDeleteWaketime({request.args})")
+    name=request.args.get('name', '')
+    if name != '':
+        waketime.delete(name)
+    return redirect("/radio/waketime/grid")
+
+@app.route("/radio/waketime/add")
+def doAddWaketime():
+    logging.debug("doAddWaketime")
+    waketime.add()
+    return redirect("/radio/waketime/grid")
+
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
 
