@@ -1,15 +1,20 @@
 import os
 import threading
 import time
-from inotify_simple import INotify, flags
 import logging
+import signal
+import fcntl
+from pathlib import Path
+import datetime
 
 class WatchDog:
     StopEvent = threading.Event()
     ChangeEvent = threading.Event()
     Lock = threading.Lock()
     Instance = None
-    _events = []
+    Done = False
+    _filePathList = {}
+    
     def __init__(self):
         pass
 
@@ -21,58 +26,35 @@ class WatchDog:
         return WatchDog.Instance
 
     @staticmethod
-    def CreateInstance(filepath):
+    def Handler(signum, dirname):
+        if WatchDog.Done:
+            WatchDog.Done = False
+            return
+
+        logging.debug(f"WatchDog.Handler(signum={signum},dirname={dirname})")
+        WatchDog.Done = True
+        path = Path(dirname)
+        files = list(path.iterdir())
+        lastTime = 0
+        changedFile = ""
+        for file in files:
+            mtime = os.path.getmtime(file)
+            if mtime > lastTime:
+                lastTime = mtime
+                changedFile = str(file)
+
         instance = WatchDog.GetInstance()
-        instance.watch(filepath)
-        return instance
+        instance.fireEvent(changedFile, datetime.datetime.fromtimestamp(lastTime, datetime.timezone.utc))
 
-    @staticmethod
-    def Watch(inotify):
-        logging.debug("start thread...")
-        while not WatchDog.HasStopped():
-            try:
-               time.sleep(1)
-               hasChanged = False
-               for event in inotify.read():
-                   logging.debug(f"WatchDog.Watch(event={event})")
-                   WatchDog.Handler(event)
-                   hasChanged = True
-               if hasChanged:
-                   WatchDog.Change()
-            except:
-                raise
-            
-        logging.debug("leave thread...")
-        
-    def watch(self,filepath):
-        self._filepath = filepath
-        inotify = INotify()
-        inotify.add_watch(filepath, flags.DELETE | flags.MODIFY | flags.DELETE_SELF)
-        WatchDog.StopEvent.clear()
-        WatchDog.ChangeEvent.clear()
-        thread = threading.Thread(target = WatchDog.Watch, args=(inotify,), daemon=True)
-        thread.start()
-
-    def get_handler(self):
-        return self._handler
-
-    def get_filepath(self):
-        return self._filepath
-
-    def addEvent(self,event):
-        self._events.append(event)
-
-    def popEvent(self):
-        with WatchDog.Lock:
-            event = None if len(self._events) == 0 else self._events.pop()
-
-        return event
-    
-    @staticmethod
-    def Handler(event):
-        logging.debug(f"WatchDog.Handler(event={event})")
-        with WatchDog.Lock:
-            WatchDog.GetInstance().addEvent(event)
+    def watch(self, filepath, handler):    
+        dirname = os.path.dirname(filepath)
+        if len(self._filePathList) == 0:
+            signal.signal(signal.SIGIO, lambda signum, frame: WatchDog.Handler(signum, dirname))
+        self._filePathList[filepath] = handler
+        fd = os.open(dirname, os.O_RDONLY)
+        fcntl.fcntl(fd, fcntl.F_SETSIG, 0)
+        fcntl.fcntl(fd, fcntl.F_NOTIFY,
+                    fcntl.DN_MODIFY | fcntl.DN_CREATE | fcntl.DN_MULTISHOT)
 
     @staticmethod
     def Change():
@@ -89,26 +71,33 @@ class WatchDog:
     @staticmethod
     def HasChanged():
         return WatchDog.ChangeEvent.is_set()
-        
-def handler(watchDog):
-    logging.debug(f"handler(watchDog={watchDog})")
-    event = watchDog.popEvent()
-    while event != None:
-        print(event)
-        event = watchDog.popEvent()
 
+    def getHandler(self, filepath):
+        return None if not filepath in self._filePathList else self._filePathList[filepath]
+    
+    def fireEvent(self,changedFile, modifiedTime):
+        logging.debug(f"fireEvent(changdFile={changedFile}, modifiedTime={str(modifiedTime)})")
+        handler = self.getHandler(changedFile)
+        if handler != None:
+            handler(changedFile, modifiedTime)
+
+def waketime_handler(changedFile, modifiedTime):
+    logging.debug(f"waketime_handler(changedFille={changedFile}, modifiedTime={str(modifiedTime)})")
+
+def radio_handler(changedFile, modifiedTime):
+    logging.debug(f"radio_handler(changedFille={changedFile}, modifiedTime={str(modifiedTime)})")
+    
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    filepath = "/var/radio/conf/"
+    dirname = "/var/radio/conf/"
 
-    WatchDog.CreateInstance(filepath)
+    watchDog = WatchDog.GetInstance()
+    watchDog.watch(os.path.join(dirname, "waketime.json"),  waketime_handler)
+    watchDog.watch(os.path.join(dirname, "radio.json"), radio_handler)
     isWaiting = True
     while isWaiting:
         try:
             time.sleep(2)
-            if WatchDog.HasChanged():
-                handler(WatchDog.GetInstance())
-                WatchDog.ChangeEvent.clear()
         except KeyboardInterrupt:
             isWaiting = False
 
