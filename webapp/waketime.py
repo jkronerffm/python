@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 from common import dictToObj
 from common.dictToObj import obj
 import json
+import uuid
 import logging
 
 gridHtml="""
@@ -198,32 +199,35 @@ def build_edit(name):
         radioSender = readData(filepathRadioSender)
 
     job = getJob(name)
-    checked = "checked=\"checked\""
-    dateChecked = checked if job.type=="date" else ""
     senderOptions = 12* " " + "<option value=""></option>"
     for sender in radioSender.sender:
-        selected = "selected" if hasattr(job, 'sender') and job.sender == sender.name else ""
+        selected = "selected" if job != None and hasattr(job, 'sender') and job.sender == sender.name else ""
         senderOptions += 12*" " + f"<option value=\"{sender.name}\" {selected}>{sender.name}</option>\n"
-    content = (name, dateChecked, )
-    if job.type == "date":
-        date = job.runtime.date
-        time = job.runtime.time
+    if job != None:
+        checked = "checked=\"checked\""
+        dateChecked = checked if job.type=="date" else ""
+        content = (name, dateChecked, )
+        if job.type == "date":
+            date = job.runtime.date
+            time = job.runtime.time
+        else:
+            date=""
+            time=""
+            
+        content+= ("block" if job.type=="date" else "none", date, time)
+        day = ""
+        timecron = ""
+        if job.type == "cron":
+            day = retranslate_daysOfWeek(job.runtime.day_of_week)
+            hour = "%02d" % (int(job.runtime.hour)) if job.runtime.hour != '*' else ''
+            minute = "%02d" % (int(job.runtime.minute)) if job.runtime.minute != '*' else ''
+            timecron = "%s:%s" % (hour, minute)
+        sender = job.sender if hasattr(job, 'sender') else ""
+        duration = job.duration if hasattr(job, 'duration') else ""
+        content += ("block" if job.type=="cron" else "none", timecron)
+        content += (duration, senderOptions, day)
     else:
-        date=""
-        time=""
-        
-    content+= ("block" if job.type=="date" else "none", date, time)
-    day = ""
-    timecron = ""
-    if job.type == "cron":
-        day = retranslate_daysOfWeek(job.runtime.day_of_week)
-        hour = "%02d" % (int(job.runtime.hour)) if job.runtime.hour != '*' else ''
-        minute = "%02d" % (int(job.runtime.minute)) if job.runtime.minute != '*' else ''
-        timecron = "%s:%s" % (hour, minute)
-    sender = job.sender if hasattr(job, 'sender') else ""
-    duration = job.duration if hasattr(job, 'duration') else ""
-    content += ("block" if job.type=="cron" else "none", timecron)
-    content += (duration, senderOptions, day)
+        content = (name, "", "none", "", "", "block", "", "", senderOptions, "")
     html = formHtml % content
     return html
 
@@ -244,6 +248,12 @@ def getJob(name):
             return job
     return None
 
+def new_name():
+    name = "start_"
+    uniqueName =  str(uuid.uuid4())
+    name += uniqueName
+    return  name
+
 def activateJob(name):
     global data
 
@@ -259,16 +269,43 @@ def writeData():
         f.write(jsonStr)
         f.close()
 
+def getNumeric(val):
+    return int(val) if val.isnumeric() else val
+
+def splitTimeString(time):
+    timeval = time.split(':') if len(time) > 0 else ['*', '*']
+    return (getNumeric(timeval[0]), getNumeric(timeval[1]))
+
+def createRuntime(theType, date, time, days_of_week):
+    (h, m) = splitTimeString(time[1])
+    dictRuntime = { 'date': date, 'time': time } if theType == 'date' else { 'day_of_week': translate_daysOfWeek(days_of_week), 'hour': h, 'minute': m }
+    return dictToObj.obj(dictRuntime)
+        
+def createJob(name,theType, date, time, days_of_week, duration, sender):
+    data = getData()
+    jobDict = {
+        'name': name,
+        'type': theType,
+        'duration': duration,
+        'sender': sender,
+        'runtime': createRuntime(theType, date, time, days_of_week),
+        'active': False
+    }
+    data.scheduler.job.append(dictToObj.obj(jobDict))
+    
 def save(name,theType, date, time, days_of_week, duration, sender):
     job = getJob(name)
-    job.type = theType
-    if theType == "date":
-        job.runtime = dictToObj.obj({'date': date, 'time': time[0]})
+    if job != None:
+        job.type = theType
+        if theType == "date":
+            job.runtime = dictToObj.obj({'date': date, 'time': time[0]})
+        else:
+            timestr = time[1].split(':') if len(time[1]) > 0 else ['*','*']
+            job.runtime = dictToObj.obj({'day_of_week': translate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
+        job.duration = duration
+        job.sender = sender
     else:
-        timestr = time[1].split(':') if len(time[1]) > 0 else ['*','*']
-        job.runtime = dictToObj.obj({'day_of_week': translate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
-    job.duration = duration
-    job.sender = sender
+        createJob(name, theType, date, time, days_of_week, duration, sender)
     writeData()
 
 daysValues = {
@@ -336,14 +373,31 @@ def delete(name):
     writeData()
 
 def add():
-    pass
+    name = new_name()
+    return build_edit(name)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    (h,m) = splitTimeString('12:10')
+    logging.debug(f"h={h}, m={m}")
+    (h,m) = splitTimeString('*:*')
+    logging.debug(f"h={h}, m={m}")
+    (h,m) = splitTimeString('*:10')
+    logging.debug(f"h={h}, m={m}")
+    (h,m) = splitTimeString('12:*')
+    logging.debug(f"h={h}, m={m}")
+
+    r = createRuntime('date', '01.02.2024', ['12:10', ''], '')
+    logging.debug(f"runtime = {str(r)}")
+    r = createRuntime('cron', '', ['', ''], '*')
+    logging.debug(f"runtime = {str(r)}")
+    r = createRuntime('cron', '', ['', '12:30'], 'mon-wed,fri-sun')
+    logging.debug(f"runtime = {str(r)}")
+
+    createJob('blah1', 'date','01.02.2024', ['13:00', ''], '', '10', 'hr1')
     data = getData()
-    job = getJob("start_dauernd")
-    logging.debug(job)
-    runtime = build_runtime(job)
-    logging.debug(runtime)
-    dow=translate_daysOfWeek(['mon','tue', 'wed', 'thu', 'fri', 'sat', 'sun'])
-    logging.debug(dow)
+    logging.debug(f"data={str(data)}")
+
+    createJob('blah2', 'cron','', ['','13:00'], 'tue,thu,fri-sun', '10', 'hr3')
+    data = getData()
+    logging.debug(f"data={str(data)}")

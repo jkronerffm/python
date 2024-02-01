@@ -77,8 +77,8 @@ def doDeleteWaketime():
 @app.route("/radio/waketime/add")
 def doAddWaketime():
     logging.debug("doAddWaketime")
-    waketime.add()
-    return redirect("/radio/waketime/grid")
+    return waketime.add()
+
 
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
