@@ -109,7 +109,7 @@ formHtml="""
         </tr>
         <tr colspan="2">
           <td>Dauer[Min]:</td>
-          <td><input type="text" id="duration" name="duration" value="%s"/>
+          <td><input type="number" min="0" max="59" id="duration" name="duration" value="%s"/>
         </tr>
         <tr>
           <td><label for="sender">Sender:</label</td>
@@ -119,7 +119,7 @@ formHtml="""
         </tr>
         <tr>
           <td colspan="2" style="align:center;">
-            <input type="submit" value="Speichern"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')"><input type="button" value="Delete" onclick="location.assign('/radio/waketime/delete?name=' + document.getElementById('name').value)">
+            <input type="submit" value="Speichern"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')"><input type="button" value="-" onclick="location.assign('/radio/waketime/delete?name=' + document.getElementById('name').value)">
           </td>
         </tr>
       </table>
@@ -217,10 +217,13 @@ def build_edit(name):
     timecron = ""
     if job.type == "cron":
         day = retranslate_daysOfWeek(job.runtime.day_of_week)
-        timecron = "%02d:%02d" % (int(job.runtime.hour), int(job.runtime.minute))
+        hour = "%02d" % (int(job.runtime.hour)) if job.runtime.hour != '*' else ''
+        minute = "%02d" % (int(job.runtime.minute)) if job.runtime.minute != '*' else ''
+        timecron = "%s:%s" % (hour, minute)
     sender = job.sender if hasattr(job, 'sender') else ""
+    duration = job.duration if hasattr(job, 'duration') else ""
     content += ("block" if job.type=="cron" else "none", timecron)
-    content += (job.duration, senderOptions, day)
+    content += (duration, senderOptions, day)
     html = formHtml % content
     return html
 
@@ -262,7 +265,7 @@ def save(name,theType, date, time, days_of_week, duration, sender):
     if theType == "date":
         job.runtime = dictToObj.obj({'date': date, 'time': time[0]})
     else:
-        timestr = time[1].split(':')
+        timestr = time[1].split(':') if len(time[1]) > 0 else ['*','*']
         job.runtime = dictToObj.obj({'day_of_week': translate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
     job.duration = duration
     job.sender = sender
@@ -290,6 +293,8 @@ daysValues = {
     'fri-sun':112,
     'wed-sun':124,
     'tue-sun':126,
+    'mon-sun':127,
+    '*':127
 }
 
 def retranslate_daysOfWeek(daysOfWeek):
@@ -307,11 +312,14 @@ def retranslate_daysOfWeek(daysOfWeek):
     return ",".join(translation)
         
 def translate_daysOfWeek(daysOfWeek):
+    logging.debug(f"translate_daysOfWeek(daysOfWeek={daysOfWeek})")
     value = 0
     translation=""
     for day_of_week in daysOfWeek:
         value = value + daysValues[day_of_week]
 
+    if value == 127:
+        return '*'
     values = list(daysValues.values())
     values.sort(reverse=True)
     for v in values:
@@ -332,10 +340,10 @@ def add():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    for d in [['mon', 'tue', 'wed', 'thu', 'fri'], ['mon', 'tue', 'wed', 'fri', 'sat', 'sun'], ['mon', 'wed', 'fri'], ['mon','tue', 'wed', 'fri'], ['mon', 'tue', 'thu','fri','sat']]:
-        translation = translate_daysOfWeek(d)
-        logging.debug(f"in: {d}, out: {translation}")
-    
-    for d in ['mon-fri','mon,wed,thu-sat']:
-        translation = retranslate_daysOfWeek(d)
-        logging.debug(f"in: {d}, out: {translation}")
+    data = getData()
+    job = getJob("start_dauernd")
+    logging.debug(job)
+    runtime = build_runtime(job)
+    logging.debug(runtime)
+    dow=translate_daysOfWeek(['mon','tue', 'wed', 'thu', 'fri', 'sat', 'sun'])
+    logging.debug(dow)
