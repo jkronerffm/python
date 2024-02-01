@@ -323,7 +323,9 @@ def translate_daysOfWeek(daysOfWeek):
     return translation
 
 def delete(name):
-    pass
+    data = getData()
+    data.scheduler.job = list(filter(lambda x: x.name != name, data.scheduler.job))
+    writeData()
 
 def add():
     pass
