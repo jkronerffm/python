@@ -1,11 +1,15 @@
 import sys
-sys.path.append("/home/jkroner/Documents/python/have_internet")
+import os
+from pathlib import Path
+basepath = Path(os.path.dirname(os.path.realpath(__file__))).parent.absolute()
+sys.path.append(os.path.join(basepath, "have_internet"))
+sys.path.append(os.path.join(basepath, "common"))
 from os.path import isfile
 import json
 import pygame
 import math
+from datetime import datetime
 from time import strftime, localtime
-from pathlib import Path
 from ctypes import cast, POINTER
 from RadioPlayer import *
 import logging
@@ -13,6 +17,7 @@ from Scheduler import RadioScheduler
 from have_internet import haveInternet
 from urllib.parse import unquote, urlparse
 from MetaBackgroundWorker import MetaBackgroundWorker
+from filewatcher import WatchDog
 
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
@@ -184,7 +189,7 @@ def draw_sender(sender, x, y):
     global screen
     global BLACK, WHITE, RED
 
-    sender['rect'] = pygame.Rect(x,y,senderWidth, senderHeight)
+    sender['rect'] = pygame.Rect(x,y,senderWidth, 60)
     imageDrawn = False
     imageWidth = senderWidth
     imageHeight = 60
@@ -196,6 +201,7 @@ def draw_sender(sender, x, y):
             (width, height) = image.get_size()
             imageWidth = 64
             imageHeight = imageWidth * height / width
+            senderHeight = imageHeight if imageHeight > senderHeight else senderHeight
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
             sender['rect'] = pygame.Rect(x, y, imageWidth, imageHeight)
             screen.blit(scaledImage, sender['rect'].topleft)
@@ -205,9 +211,10 @@ def draw_sender(sender, x, y):
         screen.blit(s, sender['rect'].topleft)
     
     x = x + senderWidth
-    if x > (screenWidth - screenBorder):
+    if (x + senderWidth) > (screenWidth - screenBorder):
         x = screenBorder
-        y = y + senderHeight
+        y = y + senderHeight + 10
+        senderHeight = 60
     return (x, y, imageWidth, imageHeight)
     
 def draw_radio():
@@ -271,8 +278,14 @@ def draw_radio():
 
 def draw_clock():
     global screen
-    global bigfont, medfont
+    global bigfont, medfont, font18
     global screenWidth, screenHeight
+    global radioScheduler
+
+    nextRunTime = radioScheduler.nextRunTime()
+    nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
+    nrt = font18.render(nextRunTimeDisplay, True, WHITE)
+    screen.blit(nrt, [0, 0])
     now = localtime()
     clock = strftime("%H:%M",now)
     cal = strftime("%d.%m.%Y", now)
@@ -326,7 +339,20 @@ def metaCallback(sender, title):
         MetaBackgroundWorker.CurrentSender = sender
         MetaBackgroundWorker.CurrentTitle  = title
     MetaBackgroundWorker.ChangeEvent.set()
-    
+
+def waketimeHandler(filepath, modificationTime):
+    global radioScheduler
+    logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
+    radioScheduler.shutdown()
+    radioScheduler = RadioScheduler(filepath)
+    radioScheduler.start()
+    pass
+
+def radioHandler(filepath, modificationTime):
+    global radioPlayer
+    logging.debug(f"radioHandler(filepath={filepath}): load config file")
+    radioPlayer.readConfigFile(filepath)
+
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
     pygame.init()
@@ -346,15 +372,21 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
     focusOnVolumeSettings = False
 
-    radioPlayer = RadioPlayer("radio.json")
+    confDir = "/var/radio/conf"
+    confFilepathRadio = os.path.join(confDir, "radio.json")
+    confFilepathWaketime = os.path.join(confDir, "waketime.json")
+    radioPlayer = RadioPlayer(confFilepathRadio)
     senderWidth = (screenWidth - 2 * screenBorder) / 6
     senderHeight = 60
     load_Settings()
-    radioScheduler = RadioScheduler('waketime.json')
+    radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
     radioScheduler.setJobHandler(jobHandler)
     radioScheduler.set_testing()
     radioScheduler.start()
+    watchDog = WatchDog.GetInstance()
+    watchDog.watch(confFilepathRadio, radioHandler)
+    watchDog.watch(confFilepathWaketime, waketimeHandler)
     running = True
     active = False
     WHITE=(255,255,255)
@@ -406,4 +438,5 @@ if __name__ == "__main__":
     logging.debug("exit the pygame app")
     pygame.quit()
     radioPlayer.stop()
+    radioScheduler.shutdown()
     sys.exit()
