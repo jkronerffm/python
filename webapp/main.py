@@ -31,13 +31,40 @@ htmlString ="""
 def init():
     return htmlString
 
+def getLanguageList(acceptLanguages:str):
+    result = []
+    langs = acceptLanguages.split(',')
+    for lang_quality_pair in langs:
+        if ';' in lang_quality_pair:
+            lang, quality = lang_quality_pair.split(';')
+            quality = float(quality[2:])
+        else:
+            lang = lang_quality_pair
+            quality = 1.0
+        result.append({
+            'code': lang.split('-')[0],
+            'code-with-country': lang,
+            'quality': quality
+        })
+
+        result.sort(key=lambda x: x['quality'], reverse=True)
+    return result
+
+def getMainLanguage(acceptLanguages:str):
+    languageList = getLanguageList(acceptLanguages)
+    return languageList[0]['code']
+
 @app.route("/radio/waketime/")
 def doWaketime():
     return redirect("/radio/waketime/grid")
 
 @app.route("/radio/waketime/grid")
-def grid():
-    return waketime.build_grid()
+def doWaketimeGrid():
+    acceptLanguages=str(request.accept_languages)
+    mainLanguage = getMainLanguage(acceptLanguages)
+    logging.debug(f"waketimeGrid(accept_languages:{acceptLanguages})")
+    logging.debug(f">> mainLanguage = {mainLanguage}")
+    return waketime.build_grid(mainLanguage)
 
 @app.route("/radio/waketime/set_active")
 def set_active():
@@ -79,8 +106,7 @@ def doAddWaketime():
     logging.debug("doAddWaketime")
     return waketime.add()
 
-
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
-
+    
     

@@ -6,11 +6,21 @@ from common.dictToObj import obj
 import json
 import uuid
 import logging
+from datetime import datetime
 
 gridHtml="""
 <!doctype html>
 <html>
 <head>
+    <style>
+      .waketimerow {
+        cursor: pointer;        
+      }
+
+      .waketimerow:hover {
+        box-shadow: 2px 2px 2px 2px;
+      }
+    </style>
     <script type="text/javascript">
       function setActive(name) {
           const xhttp = new XMLHttpRequest();
@@ -19,6 +29,10 @@ gridHtml="""
           xhttp.open("GET", "/radio/waketime/set_active?name=" + name, true);
           xhttp.send();
       }
+
+      function editJob(name) {
+        window.location.replace("/radio/waketime/edit?name="+name);
+      }
     </script>
     <meta name="viewport" content="width=device-width">
     <title>Weckzeiten</title>
@@ -26,6 +40,13 @@ gridHtml="""
 <body>
     <h1>Weckzeiten</h1>
     <table>
+      <tr>
+        <th>Tag</th>
+        <th>Zeit</th>
+        <th>Dauer[Min]</td>
+        <th>Sender</th>
+        <th>Aktiv</th>
+      </tr>
 %s
       <tr>
         <td colspan="2">
@@ -157,12 +178,36 @@ def build_runtime(job):
     s = "%s %s:%s" % (runtime.day_of_week, "%02d" % (int(runtime.hour)) if runtime.hour != "*" else runtime.hour,"%02d" % (int(runtime.minute)) if runtime.minute != "*" else runtime.minute) if job.type == "cron" else f"{runtime.date} {runtime.time}"
     return s
 
-def build_gridRow(job):
+def build_runtimeDay(job, mainLanguage):
+    runtime = job.runtime
+    if job.type == "cron":
+        s = "%s" % (translate_days(runtime.day_of_week, mainLanguage))
+    else:
+        dt = datetime.strptime(runtime.date, '%Y-%m-%d')
+        s = dt.strftime('%d.%m.%Y')
+        
+    return s
+
+def build_runtimeTime(job):
+    logging.debug(f"build_runtimeTime(job={str(job)})")
+    runtime = job.runtime
+    if job.type == "cron":
+        hour = "%02d" % (int(runtime.hour)) if type(runtime.hour) is int else runtime.hour
+        minute = "%02d" % (int(runtime.minute)) if type(runtime.minute) else runtime.minute
+        
+        s = "%s:%s" % (hour, minute)
+    else:
+        s = job.runtime.time
+    return s
+
+def build_gridRow(job, mainLanguage):
     indent = "    "
     rowIndent = 2*indent
     colIndent = 3*indent
     row=""
     runtime = build_runtime(job)
+    runtimeDay = build_runtimeDay(job, mainLanguage)
+    runtimeTime = build_runtimeTime(job)
     if hasattr(job, 'duration'):
         duration = f", Dauer:{str(job.duration)}Min."
     else:
@@ -174,22 +219,24 @@ def build_gridRow(job):
     
     active = "checked=\"checked\"" if job.active else ""
     content = runtime + duration + sender
-    editLink = f"/radio/waketime/edit?name={job.name}"
-    row+= f"{rowIndent}<tr>\n"
-    row+= f"{colIndent}<td><a href=\"{editLink}\">{content}</a></td>\n"
+##    editLink = f"/radio/waketime/edit?name={job.name}"
+    row += f"{rowIndent}<tr class=\"waketimerow\">\n"
+    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{runtimeDay}</td>\n"
+    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{runtimeTime}</td>\n"
+    row += f"{colIndent}<td style=\"text-align:right\" onclick=\"editJob('{job.name}')\">{str(job.duration)}</td>\n"
+    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{job.sender}</td>\n"
+##    row+= f"{rowIndent}<tr>\n"
+##    row+= f"{colIndent}<td><a href=\"{editLink}\">{content}</a></td>\n"
     row+= f"{colIndent}<td><input type=\"checkbox\" name=\"active\" {active} id=\"{job.name}\" onClick=\"setActive('{job.name}')\"/></td>\n"
     row+= f"{rowIndent}</tr>\n"
     return row
 
-def build_grid():
+def build_grid(mainLanguage):
     data = getData()
     content = ""
     for job in data.scheduler.job:
-        content+= build_gridRow(job)
+        content+= build_gridRow(job,  mainLanguage)
     return gridHtml % (content)
-
-def build_formRow(job, name):
-    pass
 
 def build_edit(name):
     global data
@@ -278,7 +325,7 @@ def splitTimeString(time):
 
 def createRuntime(theType, date, time, days_of_week):
     (h, m) = splitTimeString(time[1])
-    dictRuntime = { 'date': date, 'time': time } if theType == 'date' else { 'day_of_week': translate_daysOfWeek(days_of_week), 'hour': h, 'minute': m }
+    dictRuntime = { 'date': date, 'time': time[0] } if theType == 'date' else { 'day_of_week': translate_daysOfWeek(days_of_week), 'hour': h, 'minute': m }
     return dictToObj.obj(dictRuntime)
         
 def createJob(name,theType, date, time, days_of_week, duration, sender):
@@ -334,6 +381,47 @@ daysValues = {
     '*':127
 }
 
+day_translation = {
+    'de': {
+        'mon': 'Mo',
+        'tue': 'Di',
+        'wed': 'Mi',
+        'thu': 'Do',
+        'fri': 'Fr',
+        'sat': 'Sa',
+        'sun': 'So'
+    },
+    'es': {
+        'mon': 'lun',
+        'tue': 'mar',
+        'wed': 'mie',
+        'thu': 'jue',
+        'fri': 'vie',
+        'sat': 'sab',
+        'sun': 'dom'
+    }
+}
+
+def translate_days(daysOfWeek, targetLanguage):
+    if not (targetLanguage in day_translation.keys()):
+        return daysOfWeek
+    
+    result = ""
+    if ',' in daysOfWeek:
+        l = daysOfWeek.split(',')
+        for e in l:
+            s = translate_days(e, targetLanguage)
+            result += "," + s if len(result) > 0 else s
+    elif '-' in daysOfWeek:
+        l = daysOfWeek.split('-')
+        for e in l:
+            s = translate_days(e, targetLanguage)
+            result += "-" + s if len(result) > 0 else s
+    else:
+        result = day_translation[targetLanguage][daysOfWeek]
+
+    return result
+    
 def retranslate_daysOfWeek(daysOfWeek):
     daysOfWeekList = daysOfWeek.split(',')
     value = 0
@@ -350,6 +438,8 @@ def retranslate_daysOfWeek(daysOfWeek):
         
 def translate_daysOfWeek(daysOfWeek):
     logging.debug(f"translate_daysOfWeek(daysOfWeek={daysOfWeek})")
+    if not(daysOfWeek) is list:
+        return daysOfWeek
     value = 0
     translation=""
     for day_of_week in daysOfWeek:
@@ -401,3 +491,15 @@ if __name__ == "__main__":
     createJob('blah2', 'cron','', ['','13:00'], 'tue,thu,fri-sun', '10', 'hr3')
     data = getData()
     logging.debug(f"data={str(data)}")
+
+    job = getJob('blah1')
+    s = build_runtimeDay(job)
+    logging.debug(s)
+    job = getJob('blah2')
+    s = build_runtimeTime(job)
+    logging.debug(s)
+
+    for days in ['mon', 'mon,wed,fri', 'mon-wed,fri', 'mon-wed,fri-sun']:
+        for lang in ['en', 'de', 'es']:
+            translatedDays = translate_days(days, lang)
+            logging.debug(f"target language={lang}, input={days}, output={translatedDays}")
