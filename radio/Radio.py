@@ -7,6 +7,7 @@ sys.path.append(os.path.join(basepath, "common"))
 from os.path import isfile
 import json
 import pygame
+from pygame.event import Event
 import math
 from datetime import datetime
 from time import strftime, localtime
@@ -18,7 +19,15 @@ from have_internet import haveInternet
 from urllib.parse import unquote, urlparse
 from MetaBackgroundWorker import MetaBackgroundWorker
 from filewatcher import WatchDog
+from enum import Enum
 
+MetaEvent = pygame.event.custom_type() + 1
+SettingsEvent = pygame.event.custom_type() + 2
+
+class SettingsType(Enum):
+    Waketime = 1
+    Radio = 2
+    
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
     x2, y2 = x1+w, y1+h
@@ -332,26 +341,40 @@ def onAddJob(name, job):
     print("onAddJob(name=%s, job=%s)" % (name, str(job)))
 
 def metaCallback(sender, title):
+    global radioPlayer
+    senderInUrl = radioPlayer.urlEndsWith(sender)
     if sender.endswith('.mp3'):
         MetaBackgroundWorker.CurrentTitle = sender[:len(sender)-4].replace('__', ' - ').replace('_', ' ')
         MetaBackgroundWorker.CurrentSender = "playlist"
+    elif senderInUrl != None:
+        MetaBackgroundWorker.CurrentTitle = title
+        MetaBackgroundWorker.CurrentSender = senderInUrl["name"]
     else:
         MetaBackgroundWorker.CurrentSender = sender
         MetaBackgroundWorker.CurrentTitle  = title
     MetaBackgroundWorker.ChangeEvent.set()
 
-def waketimeHandler(filepath, modificationTime):
+def changeWaketime(filepath):
     global radioScheduler
-    logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
     radioScheduler.shutdown()
     radioScheduler = RadioScheduler(filepath)
     radioScheduler.start()
-    pass
+
+def changeRadio(filepath):
+    global radioPlayer
+    radioPlayer.readConfigFile(filepath)
+    
+def waketimeHandler(filepath, modificationTime):
+    logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
+    event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Waketime, 'Filepath': filepath})
+    logging.debug(f">> post event {event}")
+    pygame.event.post(event)
 
 def radioHandler(filepath, modificationTime):
-    global radioPlayer
     logging.debug(f"radioHandler(filepath={filepath}): load config file")
-    radioPlayer.readConfigFile(filepath)
+    event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Radio, 'Filepath': filepath})
+    logging.debug(f">> post event {event}")
+    pygame.event.post(event)
 
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
@@ -429,11 +452,17 @@ if __name__ == "__main__":
                     break;
                 elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
                     buttonDown = False
+                elif event.type == SettingsEvent:
+                    if event.SettingsType == SettingsType.Waketime:
+                        changeWaketime(event.Filepath)
+                    if event.SettingsType == SettingsType.Radio:
+                        changeRadio(event.Filepath)
         
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:
-            running = False
+            event = pygame.event.Event(pygame.QUIT)
+            pygame.event.post(event)
             continue
     logging.debug("exit the pygame app")
     pygame.quit()

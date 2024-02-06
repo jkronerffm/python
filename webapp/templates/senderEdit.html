@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form action="/radio/sender/save" method="get">
+  <table>
+    <tr>
+      <td>Name:</td>
+      <td><input type="text" id="name" name="name" value="{{ name }}"></td>
+    </tr>
+    <tr>
+      <td>Adresse:</td>
+      <td><input type="text" id="url" name="url" value="{{ url }}"></td>
+    </tr>
+    <tr>
+      <td>Bild:</td>
+      <td><input type="text" id="image" name="image" value="{{ image }}"/></td>
+      <td><img style="width:32px; height:32px" src="{{ imageData }}"/></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="text-align:center;">
+        <input type="submit" id="submit" value="Speichern">
+        <input type="button" id="back" value="Zur&uuml;ck" onclick="window.location.replace('/radio/sender/')">
+        {% if canDelete %}
+            <input type="button" id="delete" value="-" onlclick="window.location.replace('radio/sender/delete?name={{ name }}')">
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+</form>
+{% endblock %}

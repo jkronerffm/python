@@ -1,8 +1,13 @@
-from flask import Flask, redirect, request
 import sys
-sys.path.append("/home/jkroner/Documents/python")
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
+from flask import Flask, redirect, request, render_template
 import waketime
 import logging
+from common import dictToObj
+import base64
+from urllib.request import url2pathname
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -53,6 +58,56 @@ def getLanguageList(acceptLanguages:str):
 def getMainLanguage(acceptLanguages:str):
     languageList = getLanguageList(acceptLanguages)
     return languageList[0]['code']
+
+def loadImageToBase64(url):
+    p = urlparse(url)
+    filepath = url2pathname(p.path)
+    ext = os.path.splitext(filepath)[1][1:]
+    with open(filepath, "rb") as image_file:
+        data = image_file.read()
+        encoded_string = base64.b64encode(data).decode("utf-8")
+        image_file.close()
+        if ext == "svg":
+            image_type = "svg+xml"
+        else:
+            image_type = ext
+    image = f"data:image/{image_type};base64,{encoded_string}"
+    return image
+
+@app.route("/radio/sender/")
+def doRadioSender():
+    o = dictToObj.objFromJson("/var/radio/conf/radio.json")
+    senderList = o.sender
+    imageList = []
+    for sender in senderList:
+        image = loadImageToBase64(sender.image)
+        imageList.append(image)
+    return render_template("radio.html", title="Radio Sender", header="Radio Sender", headerlist=["Name", "Adresse", "Bild"],senderList = senderList, imageList = imageList)
+
+@app.route("/radio/sender/edit")
+def doEditSender():
+    name = request.args.get("name")    
+    o = dictToObj.objFromJson("/var/radio/conf/radio.json")
+    sender = [x for x in o.sender if x.name == name]
+    if len(sender) > 0:
+        sender = sender[0]
+    else:
+        return redirect("/radio/sender")
+    logging.debug(f"doSenderEdit(name={name},sender={sender})")
+    imageData=loadImageToBase64(sender.image)
+    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", name=sender.name, url=sender.url, image=sender.image, imageData=imageData, canDelete=True)
+
+@app.route("/radio/sender/add")
+def doAddSender():
+    return render_template("senderEdit.html", title="Neuer Sender", header="Neuer Sender", name= "", url="", image="", imageData="",canDelete=False)
+
+@app.route("/radio/sender/delete")
+def doDeleteSender():
+    return redirect("/radio/sender")
+
+@app.route("/radio/sender/save")
+def doSaveSender():
+    return redirect("/radio/sender")
 
 @app.route("/radio/waketime/")
 def doWaketime():

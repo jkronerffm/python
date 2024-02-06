@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="{{ url_for('static', filename='js/radio.js') }}"></script>
+    <title>{{ title }}</title>
+  </head>
+  <body>
+    <h1>{{ header }}</h1>
+    {% block content %}
+    {% endblock %}
+  </body>
+</html>

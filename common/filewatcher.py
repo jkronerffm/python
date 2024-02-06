@@ -12,7 +12,6 @@ class WatchDog:
     ChangeEvent = threading.Event()
     Lock = threading.Lock()
     Instance = None
-    Done = False
     _filePathList = {}
     
     def __init__(self):
@@ -27,12 +26,8 @@ class WatchDog:
 
     @staticmethod
     def Handler(signum, dirname):
-        if WatchDog.Done:
-            WatchDog.Done = False
-            return
-
         logging.debug(f"WatchDog.Handler(signum={signum},dirname={dirname})")
-        WatchDog.Done = True
+        logging.debug(f"WatchDog.Handler(signum={signum},dirname={dirname})")
         path = Path(dirname)
         files = list(path.iterdir())
         lastTime = 0

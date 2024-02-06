@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<table>
+  <tr>
+    {% for headcol in headerlist%}
+    <th>{{ headcol }}</th>
+    {% endfor %}
+  </tr>
+  {% for sender in senderList %}
+  <tr class='buttonrow' onclick="editSender('{{ sender["name"] }}')">
+    <td>
+      {{ sender["name"] }}
+    </td>
+    <td>
+      {{ sender["url"] }}
+    </td>
+    <td>
+      <img src="{{ imageList.pop(0) }}" alt="{{ sender["image"] }}" style="width: 32px; height: 32px;"/>
+    </td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td colspan="3" style="text-align:center">
+      <input type="button" id="add" name="add" value="+"/ onclick="location.assign('/radio/sender/add')">
+      <input type="button" id="back" name=back" value="Zur&uuml;ck" onclick="location.assign('/radio')"/>
+    </td>
+  </tr>
+</table>
+
+{% endblock %}

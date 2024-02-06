@@ -1,0 +1,11 @@
+  .buttonrow {
+    cursor: pointer;        
+  }
+
+  .buttonrow:hover {
+    box-shadow: 2px 2px 2px 2px;
+  }
+
+  .buttonrow:active {
+    box-shadow: 1px 1px 5px #555 inset;
+  }

@@ -39,6 +39,15 @@ class obj(object):
 
         return f"<obj {attributes}>"
 
+def objFromJson(filepath):
+    o = None
+    with open(filepath) as f:
+        jsonStr = f.read()
+        jsonData = json.loads(jsonStr)
+        o = obj(jsonData)
+        f.close()
+    return o
+    
 def objToDict(o):
     d = {}
     for name in dir(o):
@@ -81,3 +90,6 @@ if __name__ == "__main__":
     print(f"objToJson:\n{jsonString}")
     ddd = json.loads(jsonString)
     print(f"{type(ddd)}={ddd}")
+
+    o = fromJson("/var/radio/conf/radio.json")
+    print(o)

@@ -16,7 +16,7 @@ class MetaBackgroundWorker:
         logging.debug("Create thread...")
         MetaBackgroundWorker.StopEvent.clear()
         MetaBackgroundWorker.ChangeEvent.clear()
-        time.sleep(5)
+        time.sleep(2)
         thread = threading.Thread(target = MetaBackgroundWorker.GetMetaThread, args=(radioPlayer, callbackFunction), daemon = True)
         thread.start()
         

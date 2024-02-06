@@ -30,7 +30,13 @@ class RadioPlayer:
 
     def sender(self):
         return self._senderData['sender']
-    
+
+    def urlEndsWith(self, name):
+        for senderItem in self.sender():
+            if senderItem["url"].endswith(name):
+                return senderItem
+        return None
+            
     def currentSender(self):
         return self._currentSender
 
