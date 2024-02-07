@@ -8,33 +8,14 @@ from common import dictToObj
 import base64
 from urllib.request import url2pathname
 from urllib.parse import urlparse
+import uuid
 
 app = Flask(__name__)
 
-htmlString ="""
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width"/>
-    <title>Radio Einstellungen</title>
-  </head>
-  <body>
-    <h1>Radio Einstellungen</h1>
-    <table>
-      <tr>
-        <td> <input type="button" id="sender" value="Sender" onClick="location.assign('/radio/sender')"/> </td>
-      </tr>
-      <tr>
-        <td> <input type="button" id="waketime" value="Weckzeiten" onClick="location.assign('/radio/waketime')"/> </td>
-      </tr>
-    </table>
-  </body>
-</html>
-"""
-
-@app.route("/")
+@app.route("/")   
 @app.route("/radio")
 def init():
-    return htmlString
+    return render_template("index.html", title="Radio Einstellungen", header="Radio Einstellungen")
 
 def getLanguageList(acceptLanguages:str):
     result = []
@@ -59,9 +40,13 @@ def getMainLanguage(acceptLanguages:str):
     languageList = getLanguageList(acceptLanguages)
     return languageList[0]['code']
 
-def loadImageToBase64(url):
+def makePathnameFromUrl(url):
     p = urlparse(url)
     filepath = url2pathname(p.path)
+    return filepath
+
+def loadImageToBase64(url):
+    filepath = makePathnameFromUrl(url)
     ext = os.path.splitext(filepath)[1][1:]
     with open(filepath, "rb") as image_file:
         data = image_file.read()
@@ -75,7 +60,7 @@ def loadImageToBase64(url):
     return image
 
 @app.route("/radio/sender/")
-def doRadioSender():
+def doListRadioSender():
     o = dictToObj.objFromJson("/var/radio/conf/radio.json")
     senderList = o.sender
     imageList = []
@@ -86,20 +71,22 @@ def doRadioSender():
 
 @app.route("/radio/sender/edit")
 def doEditSender():
-    name = request.args.get("name")    
+    senderId = request.args.get("id")
+    logging.debug(f"doEditSender(id={senderId})")
     o = dictToObj.objFromJson("/var/radio/conf/radio.json")
-    sender = [x for x in o.sender if x.name == name]
+    sender = [x for x in o.sender if x.id == senderId]
     if len(sender) > 0:
         sender = sender[0]
     else:
         return redirect("/radio/sender")
-    logging.debug(f"doSenderEdit(name={name},sender={sender})")
+    logging.debug(f"doSenderEdit(id={senderId},sender={sender})")
     imageData=loadImageToBase64(sender.image)
-    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", name=sender.name, url=sender.url, image=sender.image, imageData=imageData, canDelete=True)
+    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.image), imageData=imageData, canDelete=True, isNew=False)
 
 @app.route("/radio/sender/add")
 def doAddSender():
-    return render_template("senderEdit.html", title="Neuer Sender", header="Neuer Sender", name= "", url="", image="", imageData="",canDelete=False)
+    senderId=str(uuid.uuid4())
+    return render_template("senderEdit.html", title="Neuer Sender", header="Neuer Sender", senderId=senderId, canDelete=False, isNew=True)
 
 @app.route("/radio/sender/delete")
 def doDeleteSender():
@@ -107,6 +94,13 @@ def doDeleteSender():
 
 @app.route("/radio/sender/save")
 def doSaveSender():
+    for key in request.args.keys():
+        logging.debug(f"doSaveSender(key={key}, value={request.args.get(key)})")
+    logging.debug("doSaveSender: try to access request.files")
+    if hasattr(request, 'files'):
+        logging.debug(f"doSaveSender(files={request.files}, {request.files.keys()}, {len(request.files)})")
+    else:
+        logging.debug("request does not have an attribute 'files'")
     return redirect("/radio/sender")
 
 @app.route("/radio/waketime/")

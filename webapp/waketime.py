@@ -140,7 +140,7 @@ formHtml="""
           </select>
         </tr>
         <tr>
-          <td colspan="2" style="align:center;">
+          <td colspan="5" style="align:center;">
             <input type="submit" value="Speichern"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')"><input type="button" value="-" onclick="location.assign('/radio/waketime/delete?name=' + document.getElementById('name').value)">
           </td>
         </tr>
@@ -348,7 +348,7 @@ def save(name,theType, date, time, days_of_week, duration, sender):
             job.runtime = dictToObj.obj({'date': date, 'time': time[0]})
         else:
             timestr = time[1].split(':') if len(time[1]) > 0 else ['*','*']
-            job.runtime = dictToObj.obj({'day_of_week': translate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
+            job.runtime = dictToObj.obj({'day_of_week': retranslate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
         job.duration = duration
         job.sender = sender
     else:
@@ -405,7 +405,7 @@ day_translation = {
 def translate_days(daysOfWeek, targetLanguage):
     if not (targetLanguage in day_translation.keys()):
         return daysOfWeek
-    
+    logging.debug(f"translate_days(daysOfWeek={daysOfWeek}, targetLanguage={targetLanguage})")
     result = ""
     if ',' in daysOfWeek:
         l = daysOfWeek.split(',')
@@ -423,7 +423,7 @@ def translate_days(daysOfWeek, targetLanguage):
     return result
     
 def retranslate_daysOfWeek(daysOfWeek):
-    daysOfWeekList = daysOfWeek.split(',')
+    daysOfWeekList = daysOfWeek if isinstance(daysOfWeek, list) else daysOfWeek.split(',')
     value = 0
     for d in daysOfWeekList:
         v = daysValues[d]

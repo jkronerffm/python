@@ -8,7 +8,7 @@
     {% endfor %}
   </tr>
   {% for sender in senderList %}
-  <tr class='buttonrow' onclick="editSender('{{ sender["name"] }}')">
+  <tr class='buttonrow' onclick="editSender('{{ sender["id"] }}')">
     <td>
       {{ sender["name"] }}
     </td>
