@@ -274,7 +274,7 @@ class RadioScheduler:
         later = (now + datetime.timedelta(0,0,0,0,radioJob.duration(),0)).replace(tzinfo=tz)
         
         nextRunTime = job.next_run_time.replace(tzinfo = tz)
-        
+        logging.debug(f"{self.__class__.__name__}(later={str(later)},nextRunTime={str(nextRunTime)})")
         if radioJob.name().startswith("start_") and ((self.testing()) or (nextRunTime > later)):
             stopJob = RadioJob(self)
             stopJob.set_name(radioJob.name().replace("start_", "stop_"))

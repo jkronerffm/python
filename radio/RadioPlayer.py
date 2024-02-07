@@ -62,6 +62,7 @@ class RadioPlayer:
             if "youtube" in url:
                 url = getYoutubeStreamUrl(url)
             self.playUrl(url)
+        self.initEqualizer()
 
     def playRandomized(self,url):
         songs = shufflePlayList(url)
@@ -115,6 +116,10 @@ class RadioPlayer:
     def getVolume(self):
         return self.mediaPlayer().audio_get_volume()
 
+    def initEqualizer(self):
+        equalizer = vlc.libvlc_audio_equalizer_new_from_preset(5)
+        self.mediaPlayer().set_equalizer(equalizer)
+        
     @staticmethod
     def GetMetaThread(radioPlayer, stopEvent, changeEvent):
         logging.debug("enter thread...")
