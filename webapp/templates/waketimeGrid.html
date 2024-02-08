@@ -4,22 +4,22 @@
 
 <table>
   <tr>
-    {% for h in headlist %}
+    {% for h in headerList %}
       <th>{{ h }}</th>
     {% endfor %}
   </tr>
     {% for job in jobList %}
-    <tr class="buttonrow" onclick="editJob('{{ job["name"] }}')">
-      <td>{{ job["runtimeDay"] }}</td>
-      <td>{{ job["runtimeTime"] }}</td>
-      <td style="text-align:right;">{{ job["duration"] }}</td>
-      <td>{{ job["sender"] }}</td>
+    <tr class="buttonrow">
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["runtimeDay"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["runtimeTime"] }}</td>
+      <td style="text-align:right; width: 3em; word-break: break-word;" onclick="editJob('{{ job["name"] }}')">{{ job["duration"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["sender"] }}</td>
       <td><input type="checkbox" name="active" {{ job["active"] }} id="{{ job["name"] }}" onclick="setActive('{{ job["name"] }}')"></td>
     </tr>
     {% endfor %}
   <tr>
     <td colspan="5" style="text-align:center;">
-      <input type="button" value="+" onclick="location.assign('/radio/waketime/add')"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/')">
+      <input class="stylebutton" type="button" value="+" onclick="location.assign('/radio/waketime/add')"><input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/')">
     </td>
   </tr>
 </table>

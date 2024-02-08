@@ -121,8 +121,9 @@ def doWaketimeGrid():
     logging.debug(f">> mainLanguage = {mainLanguage}")
 ##    return waketime.build_grid(mainLanguage)
     jobList = waketime.createJobList(mainLanguage)
-    logging.debug(f">> len(jobList) = {len(jobList)}, jobList={jobList}")
-    return render_template("waketimeGrid.html", header="Weckzeiten", headerList = waketime.getHeaderList(mainLanguage), jobList = jobList)
+    headerList = waketime.getHeaderList(mainLanguage)
+    logging.debug(f">> len(headerList) = {len(headerList)}, headerList={headerList}")    
+    return render_template("waketimeGrid.html", header="Weckzeiten", headerList = headerList, jobList = jobList)
 
 @app.route("/radio/waketime/set_active")
 def set_active():
@@ -135,7 +136,9 @@ def set_active():
 @app.route("/radio/waketime/edit")
 def doEditWaketime():
     name=request.args.get('name', default='', type=str)
-    return waketime.build_edit(name)
+##    return waketime.build_edit(name)
+    senderList, editJob = waketime.createEdit(name)
+    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=True)
 
 @app.route("/radio/waketime/save")
 def doSaveWaketime():
@@ -162,7 +165,8 @@ def doDeleteWaketime():
 @app.route("/radio/waketime/add")
 def doAddWaketime():
     logging.debug("doAddWaketime")
-    return waketime.add()
+    senderList, editJob = waketime.add()
+    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=False)
 
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")

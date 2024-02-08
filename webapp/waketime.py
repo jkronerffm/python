@@ -8,106 +8,6 @@ import uuid
 import logging
 from datetime import datetime
 
-formHtml="""
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width">
-    <title>Bearbeite Weckzeit</title>
-    <script type="text/javascript">
-      function switchRuntime(dateOrCron) {
-        var div1 = document.getElementById('runtime_once');
-        var div2 = document.getElementById('runtime_repeatedly');
-        if (dateOrCron.checked) {
-            div1.style.display="block";
-            div2.style.display="none";
-        } else {
-            div1.style.display="none";
-            div2.style.display="block";
-        }
-      }
-    </script>
-  </head>
-  <body>
-    <form method="get" action="/radio/waketime/save">
-      <input type="hidden" id="name" name="name", value="%s">
-      <table>
-        <tr>
-          <td  colspan="2"><input type="checkbox" id="dateOrCron" name="dateOrCron" value="date"  onClick="switchRuntime(this)" %s><label for="dateOrCron">einmalig</label></td>
-        </tr>
-        <tr>
-          <td colspan="2">
-            <div id="runtime_once" style="display: %s;">
-              <table>
-                <tr>
-                  <td>
-                    Datum:
-                  </td>
-                  <td>
-                    <input type="date" id="date" name="date" value="%s">
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    Zeit:
-                  </td>
-                  <td>
-                    <input type="time" id="time" name="time" value="%s">
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div id="runtime_repeatedly" style="display: %s;">
-              <table>
-                <tr>
-                  <td> <input type="checkbox" id="mon" name="day_of_week" value="mon" >Montag</td>
-                  <td> <input type="checkbox" id="tue" name="day_of_week" value="tue" >Dienstag</td> 
-                  <td> <input type="checkbox" id="wed" name="day_of_week" value="wed" >Mittwoch</td> 
-                </tr>
-                <tr>
-                  <td> <input type="checkbox" id="thu" name="day_of_week" value="thu" >Donnerstag</td>
-                  <td> <input type="checkbox" id="fri" name="day_of_week" value="fri">Freitag</td> 
-                  <td> <input type="checkbox" id="sat" name="day_of_week" value="sat">Samstag</td>
-                </tr>
-                <tr>
-                  <td> <input type="checkbox" id="sun" name="day_of_week" value="sun">Sonntag</td>
-                </tr>
-                <tr>
-                  <td><label for="timecron">Zeit</label</td>
-                  <td><input type="time" id="time" name="time" value="%s"></td>
-                </tr>
-              </table>
-            </div>
-          </td>
-        </tr>
-        <tr colspan="2">
-          <td>Dauer[Min]:</td>
-          <td><input type="number" min="0" max="59" id="duration" name="duration" value="%s"/>
-        </tr>
-        <tr>
-          <td><label for="sender">Sender:</label</td>
-          <td><select id="sender" name="sender">
-%s
-          </select>
-        </tr>
-        <tr>
-          <td colspan="5" style="align:center;">
-            <input type="submit" value="Speichern"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')"><input type="button" value="-" onclick="location.assign('/radio/waketime/delete?name=' + document.getElementById('name').value)">
-          </td>
-        </tr>
-      </table>
-      <script type="text/javascript">
-        var checkedDays = "%s".split(",");
-        var checkBoxes = document.getElementsByName("day_of_week");
-        for (var i = 0; i < checkBoxes.length; i++) {
-          if (checkedDays.indexOf(checkBoxes[i].value) !== -1) {
-            checkBoxes[i].checked = true;
-          }
-        }
-      </script>
-    </form>
-  </body>
-</html>
-"""
 
 data = None
 radioSender = None
@@ -131,7 +31,7 @@ def build_runtime(job):
 def build_runtimeDay(job, mainLanguage):
     runtime = job.runtime
     if job.type == "cron":
-        s = "%s" % (translate_days(runtime.day_of_week, mainLanguage))
+        s = "%s" % (translate_days(translate_daysOfWeek(runtime.day_of_week), mainLanguage))
     else:
         dt = datetime.strptime(runtime.date, '%Y-%m-%d')
         s = dt.strftime('%d.%m.%Y')
@@ -149,37 +49,6 @@ def build_runtimeTime(job):
     else:
         s = job.runtime.time
     return s
-
-def build_gridRow(job, mainLanguage):
-    indent = "    "
-    rowIndent = 2*indent
-    colIndent = 3*indent
-    row=""
-    runtime = build_runtime(job)
-    runtimeDay = build_runtimeDay(job, mainLanguage)
-    runtimeTime = build_runtimeTime(job)
-    if hasattr(job, 'duration'):
-        duration = f", Dauer:{str(job.duration)}Min."
-    else:
-        duration = ""
-    if hasattr(job, 'sender'):
-        sender = f",Sender: {job.sender}"
-    else:
-        sender = ''
-    
-    active = "checked=\"checked\"" if job.active else ""
-    content = runtime + duration + sender
-##    editLink = f"/radio/waketime/edit?name={job.name}"
-    row += f"{rowIndent}<tr class=\"waketimerow\">\n"
-    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{runtimeDay}</td>\n"
-    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{runtimeTime}</td>\n"
-    row += f"{colIndent}<td style=\"text-align:right\" onclick=\"editJob('{job.name}')\">{str(job.duration)}</td>\n"
-    row += f"{colIndent}<td onclick=\"editJob('{job.name}')\">{job.sender}</td>\n"
-##    row+= f"{rowIndent}<tr>\n"
-##    row+= f"{colIndent}<td><a href=\"{editLink}\">{content}</a></td>\n"
-    row+= f"{colIndent}<td><input type=\"checkbox\" name=\"active\" {active} id=\"{job.name}\" onClick=\"setActive('{job.name}')\"/></td>\n"
-    row+= f"{rowIndent}</tr>\n"
-    return row
 
 def createJobRow(job, mainLanguage):
     runtime = build_runtime(job)
@@ -200,59 +69,65 @@ def createJobList(mainLanguage):
     jobList = []
     for job in data.scheduler.job:
         jobRow = createJobRow(job, mainLanguage)
+        logging.debug(f"createJobList(jobRow={jobRow})")
         jobList.append(jobRow)
     return jobList
 
 def getHeaderList(mainLanguage):
-    return ["Tag", "Zeit", "Dauer<br>[Min]", "Sender", "Aktiv"]
+    return ["Tag", "Zeit", "Dauer [Min]", "Sender", "Aktiv"]
 
-def build_grid(mainLanguage):
-    data = getData()
-    content = ""
-    for job in data.scheduler.job:
-        content+= build_gridRow(job,  mainLanguage)
-    return gridHtml % (content)
-
-def build_edit(name):
-    global data
+def getSenderList(job):
     global radioSender
 
     if radioSender == None:
         radioSender = readData(filepathRadioSender)
-
-    job = getJob(name)
-    senderOptions = 12* " " + "<option value=""></option>"
+        
+    senderList = []
     for sender in radioSender.sender:
-        selected = "selected" if job != None and hasattr(job, 'sender') and job.sender == sender.name else ""
-        senderOptions += 12*" " + f"<option value=\"{sender.name}\" {selected}>{sender.name}</option>\n"
+        item = {
+            'name': sender.name,
+            'selected': 'selected' if job != None and sender.name == job.sender else ''
+        }
+        senderList.append(item)
+    return senderList
+
+def createEdit(name):
+    job = getJob(name)
+    senderList = getSenderList(job)
     if job != None:
-        checked = "checked=\"checked\""
-        dateChecked = checked if job.type=="date" else ""
-        content = (name, dateChecked, )
-        if job.type == "date":
-            date = job.runtime.date
-            time = job.runtime.time
-        else:
-            date=""
-            time=""
-            
-        content+= ("block" if job.type=="date" else "none", date, time)
-        day = ""
-        timecron = ""
-        if job.type == "cron":
-            day = retranslate_daysOfWeek(job.runtime.day_of_week)
+        if job.type == 'cron':
             hour = "%02d" % (int(job.runtime.hour)) if job.runtime.hour != '*' else ''
             minute = "%02d" % (int(job.runtime.minute)) if job.runtime.minute != '*' else ''
             timecron = "%s:%s" % (hour, minute)
-        sender = job.sender if hasattr(job, 'sender') else ""
-        duration = job.duration if hasattr(job, 'duration') else ""
-        content += ("block" if job.type=="cron" else "none", timecron)
-        content += (duration, senderOptions, day)
+        else:
+            timecron = ""
+        editJob = {
+           'name': job.name,
+           'type': 'checked="checked"' if job.type == 'date' else '',
+           'displayDate': "block" if job.type=='date' else 'none',
+           'date': job.runtime.date if job.type=='date' else '',
+           'datetime': job.runtime.time if job.type=='date' else '',
+           'displaycron': "block" if job.type=='cron' else 'none',
+           'crontime': timecron,
+           'duration': job.duration if hasattr(job, 'duration') else "",
+           'sender': job.sender if hasattr(job, 'sender') else "",
+           'daysOfWeek': retranslate_daysOfWeek(job.runtime.day_of_week) if hasattr(job.runtime, 'day_of_week') else ''
+        }
     else:
-        content = (name, "", "none", "", "", "block", "", "", senderOptions, "")
-    html = formHtml % content
-    return html
-
+        editJob = {
+            'name': name,
+            'type': '',
+            'displayDate': 'none',
+            'date': '',
+            'datetime': '',
+            'displaycron': 'block',
+            'crontime': '',
+            'duration': '',
+            'sender': '',
+            'daysOfWeek': ''
+        }
+    return (senderList, editJob)
+        
 def getData():
     global data
     if data == None:
@@ -413,13 +288,14 @@ def retranslate_daysOfWeek(daysOfWeek):
         
 def translate_daysOfWeek(daysOfWeek):
     logging.debug(f"translate_daysOfWeek(daysOfWeek={daysOfWeek})")
-    if not(daysOfWeek) is list:
-        return daysOfWeek
+    listOfDaysOfWeek = daysOfWeek if daysOfWeek is list else daysOfWeek.split(",")
+
     value = 0
     translation=""
-    for day_of_week in daysOfWeek:
+    for day_of_week in listOfDaysOfWeek:
         value = value + daysValues[day_of_week]
 
+    logging.debug(f"translate_daysOfWeek(value={value})")
     if value == 127:
         return '*'
     values = list(daysValues.values())
@@ -439,42 +315,15 @@ def delete(name):
 
 def add():
     name = new_name()
-    return build_edit(name)
+    return createEdit(name)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    (h,m) = splitTimeString('12:10')
-    logging.debug(f"h={h}, m={m}")
-    (h,m) = splitTimeString('*:*')
-    logging.debug(f"h={h}, m={m}")
-    (h,m) = splitTimeString('*:10')
-    logging.debug(f"h={h}, m={m}")
-    (h,m) = splitTimeString('12:*')
-    logging.debug(f"h={h}, m={m}")
-
-    r = createRuntime('date', '01.02.2024', ['12:10', ''], '')
-    logging.debug(f"runtime = {str(r)}")
-    r = createRuntime('cron', '', ['', ''], '*')
-    logging.debug(f"runtime = {str(r)}")
-    r = createRuntime('cron', '', ['', '12:30'], 'mon-wed,fri-sun')
-    logging.debug(f"runtime = {str(r)}")
-
-    createJob('blah1', 'date','01.02.2024', ['13:00', ''], '', '10', 'hr1')
-    data = getData()
-    logging.debug(f"data={str(data)}")
-
-    createJob('blah2', 'cron','', ['','13:00'], 'tue,thu,fri-sun', '10', 'hr3')
-    data = getData()
-    logging.debug(f"data={str(data)}")
-
-    job = getJob('blah1')
-    s = build_runtimeDay(job)
-    logging.debug(s)
-    job = getJob('blah2')
-    s = build_runtimeTime(job)
-    logging.debug(s)
-
-    for days in ['mon', 'mon,wed,fri', 'mon-wed,fri', 'mon-wed,fri-sun']:
-        for lang in ['en', 'de', 'es']:
-            translatedDays = translate_days(days, lang)
-            logging.debug(f"target language={lang}, input={days}, output={translatedDays}")
+    dow = translate_daysOfWeek("mon,tue,wed")
+    logging.debug(f"translate_daysOfWeek returned {dow}")
+    days = translate_days('mon,tue,wed', 'de')
+    logging.debug(f"translate_days returned {days}")
+    job = getJob('start_workday_halfpastfive')
+    logging.debug(job)
+    t = build_runtimeDay(job, 'de')
+    logging.debug(f"build_runtimeDay({job}) returned {t})")

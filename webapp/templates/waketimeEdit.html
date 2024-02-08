@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<form method="get" action="/radio/waketime/save">
+  <input type="hidden" id="name" name="name", value="{{ job["name"] }}">
+  <table>
+    <tr>
+      <td  colspan="2">
+        <input type="checkbox"
+               id="dateOrCron"
+               name="dateOrCron"
+               value="date"
+               onClick="switchRuntime(this)"
+               {{ job["type"] }}>
+          <label for="dateOrCron">einmalig</label>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <div id="runtime_once" style="display: {{ job["displayDate"] }};">
+          <table>
+            <tr>
+              <td>
+                Datum:
+              </td>
+              <td>
+                <input type="date" id="date" name="date" value="{{ job["date"] }}">
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Zeit:
+              </td>
+              <td>
+                <input type="time" id="time" name="time" value="{{ job["datetime"] }}">
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div id="runtime_repeatedly" style="display: {{ job["displaycron"] }};">
+          <table>
+            <tr>
+              <td> <input type="checkbox" id="mon" name="day_of_week" value="mon" >Montag</td>
+              <td> <input type="checkbox" id="tue" name="day_of_week" value="tue" >Dienstag</td> 
+              <td> <input type="checkbox" id="wed" name="day_of_week" value="wed" >Mittwoch</td> 
+            </tr>
+            <tr>
+              <td> <input type="checkbox" id="thu" name="day_of_week" value="thu" >Donnerstag</td>
+              <td> <input type="checkbox" id="fri" name="day_of_week" value="fri">Freitag</td> 
+              <td> <input type="checkbox" id="sat" name="day_of_week" value="sat">Samstag</td>
+            </tr>
+            <tr>
+              <td> <input type="checkbox" id="sun" name="day_of_week" value="sun">Sonntag</td>
+            </tr>
+            <tr>
+              <td><label for="timecron">Zeit</label</td>
+              <td><input type="time" id="time" name="time" value="{{ job["crontime"] }}"></td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td>Dauer[Min]:</td>
+      <td><input type="number" min="0" max="59" id="duration" name="duration" value="{{ job["duration"] }}"/></td>
+    </tr>
+    <tr>
+      <td><label for="sender">Sender:</label</td>
+      <td>
+        <select id="sender" name="sender">
+          <option value=""></option>
+          {% for sender in senderList %}
+            <option value="{{ sender["name"] }}"
+            {% if sender["name"] == job["sender"] %}
+              selected
+            {% endif %}
+            >{{ sender["name"] }}</option>
+          {% endfor %}
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="5" style="text-align:center;">
+        <input class="stylebutton" type="submit" value="Speichern">
+        <input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')">
+        {% if canDelete %}
+        <input class="stylebutton" type="button"
+               value="-"
+               onclick="location.assign('/radio/waketime/delete?name={{  job["name"] }}')">
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  <script type="text/javascript">
+    var checkedDays = "{{ job["daysOfWeek"] }}".split(",");
+    var checkBoxes = document.getElementsByName("day_of_week");
+    for (var i = 0; i < checkBoxes.length; i++) {
+      if (checkedDays.indexOf(checkBoxes[i].value) !== -1) {
+        checkBoxes[i].checked = true;
+      }
+    }
+  </script>
+</form>
+
+{% endblock %}
