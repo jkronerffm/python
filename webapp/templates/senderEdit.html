@@ -48,9 +48,9 @@
     <tr>
       <td colspan="2" style="text-align:center;">
         <input type="submit" id="submit" value="Speichern" value="Upload">
-        <input type="button" id="back" value="Zur&uuml;ck" onclick="window.location.replace('/radio/sender/')">
+        <input type="button" id="back" value="Zur&uuml;ck" onclick="window.location.assign('/radio/sender/')">
         {% if canDelete %}
-            <input type="button" id="delete" value="-" onlclick="window.location.replace('radio/sender/delete?id={{ senderId }}')">
+            <input type="button" id="delete" value="-" onclick="window.location.assign('/radio/sender/delete?id={{ senderId }}')">
         {% endif %}
       </td>
     </tr>

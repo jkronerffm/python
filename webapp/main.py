@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.getcwd()))
 from flask import Flask, redirect, request, render_template
 import waketime
+import radio
 import logging
 from common import dictToObj
 import base64
@@ -46,6 +47,8 @@ def makePathnameFromUrl(url):
     return filepath
 
 def loadImageToBase64(url):
+    if url == '':
+        return None
     filepath = makePathnameFromUrl(url)
     ext = os.path.splitext(filepath)[1][1:]
     with open(filepath, "rb") as image_file:
@@ -90,17 +93,20 @@ def doAddSender():
 
 @app.route("/radio/sender/delete")
 def doDeleteSender():
+    senderId = request.args.get('id')
+    radio.deleteSender(senderId)
     return redirect("/radio/sender")
 
 @app.route("/radio/sender/save")
 def doSaveSender():
     for key in request.args.keys():
         logging.debug(f"doSaveSender(key={key}, value={request.args.get(key)})")
+    senderId = request.args.get('id')
+    name = request.args.get('name')
+    url = request.args.get('url')
+    image = request.args.get('imageFile')
     logging.debug("doSaveSender: try to access request.files")
-    if hasattr(request, 'files'):
-        logging.debug(f"doSaveSender(files={request.files}, {request.files.keys()}, {len(request.files)})")
-    else:
-        logging.debug("request does not have an attribute 'files'")
+    radio.save(senderId, name, url, image)
     return redirect("/radio/sender")
 
 @app.route("/radio/waketime/")
