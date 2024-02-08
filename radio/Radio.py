@@ -23,6 +23,7 @@ from enum import Enum
 
 MetaEvent = pygame.event.custom_type() + 1
 SettingsEvent = pygame.event.custom_type() + 2
+SettingsFilepath = "/var/radio/conf/radio_settings.json"
 
 class SettingsType(Enum):
     Waketime = 1
@@ -97,20 +98,21 @@ def save_Settings(senderName, volume):
         "sender": senderName,
         "volume":volume
     }
-    with open('radio_settings.json', 'w') as outfile:
+    with open(SettingsFilepath, 'w') as outfile:
         json.dump(settings, outfile)
 
 def load_Settings():
     global currentsender
     global currentname
     global volume
-
+    global SettingsFilepath
+    
     logging.debug("load_Settings")
-    myFile = Path('radio_settings.json')
+    myFile = Path(SettingsFilepath)
     if not  myFile.exists():
         return
 
-    with open('radio_settings.json', 'r') as infile:
+    with open(SettingsFilepath, 'r') as infile:
         global radioSender
         settings = json.load(infile)
         volume = settings['volume']
