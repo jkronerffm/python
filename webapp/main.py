@@ -119,7 +119,10 @@ def doWaketimeGrid():
     mainLanguage = getMainLanguage(acceptLanguages)
     logging.debug(f"waketimeGrid(accept_languages:{acceptLanguages})")
     logging.debug(f">> mainLanguage = {mainLanguage}")
-    return waketime.build_grid(mainLanguage)
+##    return waketime.build_grid(mainLanguage)
+    jobList = waketime.createJobList(mainLanguage)
+    logging.debug(f">> len(jobList) = {len(jobList)}, jobList={jobList}")
+    return render_template("waketimeGrid.html", header="Weckzeiten", headerList = waketime.getHeaderList(mainLanguage), jobList = jobList)
 
 @app.route("/radio/waketime/set_active")
 def set_active():

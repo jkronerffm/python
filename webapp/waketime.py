@@ -8,56 +8,6 @@ import uuid
 import logging
 from datetime import datetime
 
-gridHtml="""
-<!doctype html>
-<html>
-<head>
-    <style>
-      .waketimerow {
-        cursor: pointer;        
-      }
-
-      .waketimerow:hover {
-        box-shadow: 2px 2px 2px 2px;
-      }
-    </style>
-    <script type="text/javascript">
-      function setActive(name) {
-          const xhttp = new XMLHttpRequest();
-          xhttp.onload = function() {
-           };
-          xhttp.open("GET", "/radio/waketime/set_active?name=" + name, true);
-          xhttp.send();
-      }
-
-      function editJob(name) {
-        window.location.replace("/radio/waketime/edit?name="+name);
-      }
-    </script>
-    <meta name="viewport" content="width=device-width">
-    <title>Weckzeiten</title>
-</head>
-<body>
-    <h1>Weckzeiten</h1>
-    <table>
-      <tr>
-        <th>Tag</th>
-        <th>Zeit</th>
-        <th>Dauer[Min]</td>
-        <th>Sender</th>
-        <th>Aktiv</th>
-      </tr>
-%s
-      <tr>
-        <td colspan="2">
-          <input type="button" value="+" onclick="location.assign('/radio/waketime/add')"><input type="button" value="Zur&uuml;ck" onclick="location.assign('/')">
-        </td>
-      </tr>
-    </table>
-</body>
-</html>
-"""
-
 formHtml="""
 <html>
   <head>
@@ -230,6 +180,31 @@ def build_gridRow(job, mainLanguage):
     row+= f"{colIndent}<td><input type=\"checkbox\" name=\"active\" {active} id=\"{job.name}\" onClick=\"setActive('{job.name}')\"/></td>\n"
     row+= f"{rowIndent}</tr>\n"
     return row
+
+def createJobRow(job, mainLanguage):
+    runtime = build_runtime(job)
+    runtimeDay = build_runtimeDay(job, mainLanguage)
+    runtimeTime = build_runtimeTime(job)
+    jobRow = {
+        'name': job.name,
+        'runtimeDay': runtimeDay,
+        'runtimeTime': runtimeTime,
+        'duration': job.duration,
+        'sender': job.sender,
+        'active': "checked=\"checked\"" if job.active else ""
+    }
+    return jobRow
+
+def createJobList(mainLanguage):
+    data = getData()
+    jobList = []
+    for job in data.scheduler.job:
+        jobRow = createJobRow(job, mainLanguage)
+        jobList.append(jobRow)
+    return jobList
+
+def getHeaderList(mainLanguage):
+    return ["Tag", "Zeit", "Dauer<br>[Min]", "Sender", "Aktiv"]
 
 def build_grid(mainLanguage):
     data = getData()
