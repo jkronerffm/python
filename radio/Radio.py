@@ -20,6 +20,7 @@ from urllib.parse import unquote, urlparse
 from MetaBackgroundWorker import MetaBackgroundWorker
 from filewatcher import WatchDog
 from enum import Enum
+import say
 
 MetaEvent = pygame.event.custom_type() + 1
 SettingsEvent = pygame.event.custom_type() + 2
@@ -314,11 +315,13 @@ def draw_clock():
 
 def jobHandler(job):
     global active
+    logging.debug("radio.jobHandler")
     if job.name().startswith('start'):
         startHandler(job)
     elif job.name().startswith('stop') and active:
         stopHandler(job)
-        
+
+       
 def startHandler(job):
     global radioPlayer
     global currentsender
@@ -326,6 +329,11 @@ def startHandler(job):
     logging.debug("startHandler" + str(job))
     sendername = job.sender() if job.sender() != None else currentsender['name']
     sender = radioPlayer.getSenderByName(sendername)
+    if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
+        (filepath, url) = say.say_time_with_greeting('de')
+        radioPlayer.playUrl(url)
+        time.sleep(3)
+        
     if not haveInternet():
         sender = radioPlayer.getSenderByName('my music')
     currentsender = sender
@@ -360,6 +368,8 @@ def changeWaketime(filepath):
     global radioScheduler
     radioScheduler.shutdown()
     radioScheduler = RadioScheduler(filepath)
+    radioScheduler.set_testing()
+    radioScheduler.setJobHandler(jobHandler)
     radioScheduler.start()
 
 def changeRadio(filepath):

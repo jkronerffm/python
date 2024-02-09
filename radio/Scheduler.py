@@ -125,6 +125,7 @@ class RadioJob:
         self._type = job['type']
         self._runtime = self.createRunTime(job['runtime'])
         self._sender = job['sender'] if 'sender' in job else None
+        self._timeannouncement = job['timeannouncement'] if 'timeannouncement' in job else False
         print("__init_constructor__(sender=%s)" % (self.sender()))
         logging.debug("%s.__init_constructor__(runtime=%s)" % (self.__class__.__name__, str(self._runtime)))
         if "duration" in job:
@@ -138,6 +139,7 @@ class RadioJob:
         self._type = copy.deepcopy(job.type())
         self._runtime = copy.deepcopy(job.runtime())
         self._sender = copy.deepcopy(job.sender())
+        self._timeannouncement = copy.deepcopy(job.timeannouncment())
         print("__copy_constructor(sender =", self.sender(),")")
         self._duration = copy.deepcopy(job.duration())
         
@@ -179,6 +181,9 @@ class RadioJob:
 
     def set_sender(self, value):
         self._sender = value
+
+    def set_timeannouncement(self, value):
+        self._timeannouncement = value
         
     def active(self):
         return self._active
@@ -188,6 +193,9 @@ class RadioJob:
     
     def sender(self):
         return self._sender
+
+    def timeannouncement(self):
+        return self._timeannouncement
     
     def type(self):
         return self._type
@@ -275,19 +283,23 @@ class RadioScheduler:
         
         nextRunTime = job.next_run_time.replace(tzinfo = tz)
         logging.debug(f"{self.__class__.__name__}(later={str(later)},nextRunTime={str(nextRunTime)})")
-        if radioJob.name().startswith("start_") and ((self.testing()) or (nextRunTime > later)):
-            stopJob = RadioJob(self)
-            stopJob.set_name(radioJob.name().replace("start_", "stop_"))
-            stopJob.set_type('date')
-            stopJob.set_active(True)
-            date = str(later.date())
-            time = str(later.time())
-            logging.debug("%s.jobCallback(date=%s, time=%s)" % (self.__class__.__name__, date, time))
-            stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
-            stopJob.set_sender(None)
-            stopJob.set_duration(0)
-            logging.debug("%s.jobCallback(stopJob=%s)" % (self.__class__.__name__,stopJob))
-            stopJob.createJob(self._baseScheduler)
+        logging.debug(f"{self.__class__.__name__}jobCallback(): test name {radioJob.name()} and testing: {self.testing()}")
+        if radioJob.name().startswith("start_") and self.testing():
+            if nextRunTime > later:
+                logging.debug(f"{self.__class__.__name__}(): initialize stop event")
+                stopJob = RadioJob(self)
+                stopJob.set_name(radioJob.name().replace("start_", "stop_"))
+                stopJob.set_type('date')
+                stopJob.set_active(True)
+                date = str(later.date())
+                time = str(later.time())
+                logging.debug("%s.jobCallback(date=%s, time=%s)" % (self.__class__.__name__, date, time))
+                stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
+                stopJob.set_sender(None)
+                stopJob.set_duration(0)
+                logging.debug("%s.jobCallback(stopJob=%s)" % (self.__class__.__name__,stopJob))
+                stopJob.createJob(self._baseScheduler)
+            logging.debug(f"{self.__class__.__name__}(): call jobHandler")
             self._jobHandler(radioJob)
         else:
             print("%s.jobCallback(): job=%s" % (self.__class__.__name__, str(radioJob)))
