@@ -151,7 +151,8 @@ def doSaveWaketime():
     duration = request.args.get('duration', '1')
     sender = request.args.get('sender', '')
     theType= request.args.get('dateOrCron', "cron")
-    waketime.save(name, theType, date, time, daysOfWeek, duration, sender)
+    timeAnnouncement = bool(request.args.get('timeannouncement', 'False')) if 'timeannouncement' in request.args else False
+    waketime.save(name, theType, date, time, daysOfWeek, duration, sender, timeAnnouncement)
     return redirect("/radio/waketime/grid")
 
 @app.route("/radio/waketime/delete")

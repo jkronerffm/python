@@ -14,6 +14,11 @@
       <td onclick="editJob('{{ job["name"] }}')">{{ job["runtimeTime"] }}</td>
       <td style="text-align:right; width: 3em; word-break: break-word;" onclick="editJob('{{ job["name"] }}')">{{ job["duration"] }}</td>
       <td onclick="editJob('{{ job["name"] }}')">{{ job["sender"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">
+      {% if job["timeannouncement"] is defined and not empty %}
+        {{ job["timeannouncement"] }}
+      {% endif %}
+      </td>
       <td><input type="checkbox" name="active" {{ job["active"] }} id="{{ job["name"] }}" onclick="setActive('{{ job["name"] }}')"></td>
     </tr>
     {% endfor %}

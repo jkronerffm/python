@@ -81,6 +81,12 @@
       </td>
     </tr>
     <tr>
+      <td>
+        <input type="checkbox" id="timeannouncement" name="timeannouncement" value="True"/>
+        <label for="timeannouncement">Zeitansage</label>
+      </td>
+    </tr>
+    <tr>
       <td colspan="5" style="text-align:center;">
         <input class="stylebutton" type="submit" value="Speichern">
         <input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')">
@@ -99,6 +105,10 @@
       if (checkedDays.indexOf(checkBoxes[i].value) !== -1) {
         checkBoxes[i].checked = true;
       }
+    }
+    if ('{{ job["timeannouncement"] }}' == 'True') {
+      var ta = document.getElementById("timeannouncement");
+      ta.checked = true;
     }
   </script>
 </form>

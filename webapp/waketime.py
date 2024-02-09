@@ -60,6 +60,7 @@ def createJobRow(job, mainLanguage):
         'runtimeTime': runtimeTime,
         'duration': job.duration,
         'sender': job.sender,
+        'timeannouncement': 'Ja' if hasattr(job, 'timeannouncement') and job.timeannouncement else 'Nein',
         'active': "checked=\"checked\"" if job.active else ""
     }
     return jobRow
@@ -69,12 +70,11 @@ def createJobList(mainLanguage):
     jobList = []
     for job in data.scheduler.job:
         jobRow = createJobRow(job, mainLanguage)
-        logging.debug(f"createJobList(jobRow={jobRow})")
         jobList.append(jobRow)
     return jobList
 
 def getHeaderList(mainLanguage):
-    return ["Tag", "Zeit", "Dauer [Min]", "Sender", "Aktiv"]
+    return ["Tag", "Zeit", "Dauer [Min]", "Sender", "Zeitansage", "Aktiv"]
 
 def getSenderList(job):
     global radioSender
@@ -111,7 +111,8 @@ def createEdit(name):
            'crontime': timecron,
            'duration': job.duration if hasattr(job, 'duration') else "",
            'sender': job.sender if hasattr(job, 'sender') else "",
-           'daysOfWeek': retranslate_daysOfWeek(job.runtime.day_of_week) if hasattr(job.runtime, 'day_of_week') else ''
+           'daysOfWeek': retranslate_daysOfWeek(job.runtime.day_of_week) if hasattr(job.runtime, 'day_of_week') else '',
+           'timeannouncement': job.timeannouncement if hasattr(job, 'timeannouncement') else ''
         }
     else:
         editJob = {
@@ -124,7 +125,8 @@ def createEdit(name):
             'crontime': '',
             'duration': '',
             'sender': '',
-            'daysOfWeek': ''
+            'daysOfWeek': '',
+            'timeannouncement': ''
         }
     return (senderList, editJob)
         
@@ -178,7 +180,7 @@ def createRuntime(theType, date, time, days_of_week):
     dictRuntime = { 'date': date, 'time': time[0] } if theType == 'date' else { 'day_of_week': translate_daysOfWeek(days_of_week), 'hour': h, 'minute': m }
     return dictToObj.obj(dictRuntime)
         
-def createJob(name,theType, date, time, days_of_week, duration, sender):
+def createJob(name,theType, date, time, days_of_week, duration, sender, timeAnnouncement):
     data = getData()
     jobDict = {
         'name': name,
@@ -186,11 +188,12 @@ def createJob(name,theType, date, time, days_of_week, duration, sender):
         'duration': duration,
         'sender': sender,
         'runtime': createRuntime(theType, date, time, days_of_week),
+        'timeannouncement': timeAnnouncement,
         'active': False
     }
     data.scheduler.job.append(dictToObj.obj(jobDict))
     
-def save(name,theType, date, time, days_of_week, duration, sender):
+def save(name,theType, date, time, days_of_week, duration, sender, timeAnnouncement):
     job = getJob(name)
     if job != None:
         job.type = theType
@@ -201,8 +204,9 @@ def save(name,theType, date, time, days_of_week, duration, sender):
             job.runtime = dictToObj.obj({'day_of_week': retranslate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
         job.duration = duration
         job.sender = sender
+        setattr(job, 'timeannouncement', timeAnnouncement)
     else:
-        createJob(name, theType, date, time, days_of_week, duration, sender)
+        createJob(name, theType, date, time, days_of_week, duration, sender, timeAnnouncement)
     writeData()
 
 daysValues = {
@@ -255,7 +259,6 @@ day_translation = {
 def translate_days(daysOfWeek, targetLanguage):
     if not (targetLanguage in day_translation.keys()):
         return daysOfWeek
-    logging.debug(f"translate_days(daysOfWeek={daysOfWeek}, targetLanguage={targetLanguage})")
     result = ""
     if ',' in daysOfWeek:
         l = daysOfWeek.split(',')
@@ -287,7 +290,6 @@ def retranslate_daysOfWeek(daysOfWeek):
     return ",".join(translation)
         
 def translate_daysOfWeek(daysOfWeek):
-    logging.debug(f"translate_daysOfWeek(daysOfWeek={daysOfWeek})")
     listOfDaysOfWeek = daysOfWeek if daysOfWeek is list else daysOfWeek.split(",")
 
     value = 0
@@ -295,7 +297,6 @@ def translate_daysOfWeek(daysOfWeek):
     for day_of_week in listOfDaysOfWeek:
         value = value + daysValues[day_of_week]
 
-    logging.debug(f"translate_daysOfWeek(value={value})")
     if value == 127:
         return '*'
     values = list(daysValues.values())
