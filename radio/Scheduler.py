@@ -281,11 +281,13 @@ class RadioScheduler:
         tz = get_localzone()
         later = (now + datetime.timedelta(0,0,0,0,radioJob.duration(),0)).replace(tzinfo=tz)
         
-        nextRunTime = job.next_run_time.replace(tzinfo = tz)
+        nextRunTime = self.nextRunTime()
+        if nextRunTime != None:
+            nextRunTime.replace(tzinfo=tz)
         logging.debug(f"{self.__class__.__name__}(later={str(later)},nextRunTime={str(nextRunTime)})")
         logging.debug(f"{self.__class__.__name__}jobCallback(): test name {radioJob.name()} and testing: {self.testing()}")
         if radioJob.name().startswith("start_") and self.testing():
-            if nextRunTime > later:
+            if nextRunTime == None or nextRunTime > later:
                 logging.debug(f"{self.__class__.__name__}(): initialize stop event")
                 stopJob = RadioJob(self)
                 stopJob.set_name(radioJob.name().replace("start_", "stop_"))
@@ -293,13 +295,15 @@ class RadioScheduler:
                 stopJob.set_active(True)
                 date = str(later.date())
                 time = str(later.time())
-                logging.debug("%s.jobCallback(date=%s, time=%s)" % (self.__class__.__name__, date, time))
+                logging.debug("%s.jobCallback(date=%s, time=%s): create stop job" % (self.__class__.__name__, date, time))
                 stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
                 stopJob.set_sender(None)
                 stopJob.set_duration(0)
                 logging.debug("%s.jobCallback(stopJob=%s)" % (self.__class__.__name__,stopJob))
                 stopJob.createJob(self._baseScheduler)
-            logging.debug(f"{self.__class__.__name__}(): call jobHandler")
+            else:
+                logging.debug(f"{self.__class__.__name__}.jobCallback(): stop job was not created")
+            logging.debug(f"{self.__class__.__name__}.jobCallback(): call jobHandler")
             self._jobHandler(radioJob)
         else:
             print("%s.jobCallback(): job=%s" % (self.__class__.__name__, str(radioJob)))
