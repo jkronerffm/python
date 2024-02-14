@@ -1,4 +1,4 @@
-createfrom apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 from pathlib import Path
 import xmltodict
@@ -291,7 +291,7 @@ class RadioScheduler:
     def getTimeShift(self, dist):
         now = datetime.datetime.now()
         tz = get_localzone()
-        timeShift = (now + datetime.timedelta(0,0,0,0, dist, 0)).replace(tinfo=tz)
+        timeShift = (now + datetime.timedelta(0,0,0,0, dist, 0)).replace(tzinfo=tz)
         return timeShift
     
     def jobCallback(self, radioJob, job):
@@ -309,7 +309,7 @@ class RadioScheduler:
         logging.debug(f"{self.__class__.__name__}(later={str(later)},nextRunTime={str(nextRunTime)})")
         logging.debug(f"{self.__class__.__name__}jobCallback(): test name {radioJob.name()} and testing: {self.testing()}")
         if radioJob.isStartJob() and self.testing():
-            setActiveJob(radioJob.id())
+            self.setActiveJob(radioJob.id())
             if nextRunTime == None or nextRunTime > later:
                 self.createStopJob(radioJob,later)
             else:

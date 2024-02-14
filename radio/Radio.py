@@ -334,10 +334,10 @@ def startHandler(job):
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
         (filepath, url) = say.say_time_with_greeting('de')
         radioPlayer.playUrl(url)
-        time.sleep(3)
+        time.sleep(5)
         
-    currentsender = radioPlayer.getSenderByName(sendename)
-    radioPlayer.play(sendename)
+    currentsender = radioPlayer.getSenderByName(sendername)
+    radioPlayer.play(sendername)
     active = True
 
 def getSendernameFromJob(job):
@@ -349,7 +349,7 @@ def contHandler(job):
     global active
     global currentSender
     sendername = getSendernameFromJob(job) if haveInternet() else "my music"
-    currentsender = radioPlayer.getSenderByName(sender
+    currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
     active=True
     
