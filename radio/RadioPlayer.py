@@ -117,7 +117,7 @@ class RadioPlayer:
         return self.mediaPlayer().audio_get_volume()
 
     def initEqualizer(self):
-        equalizer = vlc.libvlc_audio_equalizer_new_from_preset(5)
+        equalizer = vlc.libvlc_audio_equalizer_new_from_preset(11)
         self.mediaPlayer().set_equalizer(equalizer)
         
     @staticmethod

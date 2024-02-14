@@ -1,4 +1,4 @@
-from apscheduler.schedulers.background import BackgroundScheduler
+createfrom apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 from pathlib import Path
 import xmltodict
@@ -161,9 +161,24 @@ class RadioJob:
     def name(self):
         return self._name
 
+    def id(self):
+        return self._name[self._name.index('_')+1:]
+    
     def duration(self):
         return self._duration
 
+    def isJobType(self, typePrefix):
+        return self.name().startswith(typePrefix)
+    
+    def isStartJob(self):
+        return self.isJobType("start_")
+
+    def isStopJob(self):
+        return self.isJobType("stop_")
+
+    def isContinueJob(self):
+        return self.isJobType("cont_")
+    
     def set_active(self, value):
         self._active = value
         
@@ -228,7 +243,8 @@ class RadioScheduler:
         self._baseScheduler = BackgroundScheduler()
         self._addJobHandler = None
         self._jobHandler = None
-        self._testing = False
+        self._testing = True
+        self._currentJobId = None
 
     def set_testing(self, value = True):
         self._testing = value
@@ -271,7 +287,13 @@ class RadioScheduler:
             job.createJob(self._baseScheduler)
             if self._addJobHandler != None:
                 self._addJobHandler(name, job)
-                
+
+    def getTimeShift(self, dist):
+        now = datetime.datetime.now()
+        tz = get_localzone()
+        timeShift = (now + datetime.timedelta(0,0,0,0, dist, 0)).replace(tinfo=tz)
+        return timeShift
+    
     def jobCallback(self, radioJob, job):
         logging.debug("%s.jobCallback(radioJob= %s, job=%s)" % (self.__class__.__name__,str(radioJob),str(job)))
         if radioJob.name().startswith("start_") and radioJob.duration() == 0:
@@ -279,39 +301,70 @@ class RadioScheduler:
         
         now = datetime.datetime.now()
         tz = get_localzone()
-        later = (now + datetime.timedelta(0,0,0,0,radioJob.duration(),0)).replace(tzinfo=tz)
+        later = self.getTimeShift(radioJob.duration())
         
         nextRunTime = self.nextRunTime()
         if nextRunTime != None:
             nextRunTime.replace(tzinfo=tz)
         logging.debug(f"{self.__class__.__name__}(later={str(later)},nextRunTime={str(nextRunTime)})")
         logging.debug(f"{self.__class__.__name__}jobCallback(): test name {radioJob.name()} and testing: {self.testing()}")
-        if radioJob.name().startswith("start_") and self.testing():
+        if radioJob.isStartJob() and self.testing():
+            setActiveJob(radioJob.id())
             if nextRunTime == None or nextRunTime > later:
-                logging.debug(f"{self.__class__.__name__}(): initialize stop event")
-                stopJob = RadioJob(self)
-                stopJob.set_name(radioJob.name().replace("start_", "stop_"))
-                stopJob.set_type('date')
-                stopJob.set_active(True)
-                date = str(later.date())
-                time = str(later.time())
-                logging.debug("%s.jobCallback(date=%s, time=%s): create stop job" % (self.__class__.__name__, date, time))
-                stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
-                stopJob.set_sender(None)
-                stopJob.set_duration(0)
-                logging.debug("%s.jobCallback(stopJob=%s)" % (self.__class__.__name__,stopJob))
-                stopJob.createJob(self._baseScheduler)
+                self.createStopJob(radioJob,later)
             else:
                 logging.debug(f"{self.__class__.__name__}.jobCallback(): stop job was not created")
             logging.debug(f"{self.__class__.__name__}.jobCallback(): call jobHandler")
             self._jobHandler(radioJob)
-        else:
-            print("%s.jobCallback(): job=%s" % (self.__class__.__name__, str(radioJob)))
-            if radioJob.name().startswith("stop_"):
+        elif radioJob.isStopJob() and self.activeJob() == radioJob.id():
                 print("%s.jobCallback(): call jobHandler to stop radio for job(%s)" % (self.__class__.__name__, str(radioJob)))
                 self._jobHandler(radioJob)
-            else:
-                logging.debug("%s.jobCallback(): calling job is not a start job or next runtime (%s) is before stop time (%s)" % (self.__class__.__name__, nextRunTime, later))
+        elif radioJob.isContinueJob():
+            self._jobHandler(radioJob)
+        else:
+            logging.debug("%s.jobCallback(): calling job has invalid prefix %s" % (self.__class__.__name__, radioJob.name()))
+
+    def createStopJob(self, radioJob, later):
+        logging.debug(f"{self.__class__.__name__}.createStopJob()")
+        stopJob = RadioJob(self)
+        stopJob.set_name("stop_" + radioJob.id())
+        stopJob.set_type('date')
+        stopJob.set_active(True)
+        date = str(later.date())
+        time = str(later.time())
+        logging.debug("%s.jobCallback(date=%s, time=%s): create stop job" % (self.__class__.__name__, date, time))
+        stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
+        stopJob.set_sender(None)
+        stopJob.set_duration(0)
+        logging.debug("%s.createStopJob(stopJob=%s)" % (self.__class__.__name__,stopJob))
+        stopJob.createJob(self._baseScheduler)
+
+    def createContinueJob(self, sender):
+        logging.debug(f"{self.__class__.__name__}.createContinueJob()")
+        contJob = RadioJob(self)
+        contJob.set_name(f"cont_{self.activeJob()}")
+        contJob.set_type("date")
+        contJob.set_active(True)
+        contTime = getTimeShift(10)
+        date = str(contTime.date())
+        time = str(contTime.time())
+        contJob.set_runtime(DateRunTime(contJob, {'date': date, 'time': time }))
+        contJob.set_sender(sender)
+        contJob.set_duration(0)
+        logging.debug(f"{self.__class__.__name__}.createContinueJob(job={contJob})")
+        contJob.createJob(self._baseScheduler)
+        
+    def activeJob(self):
+        return self.currentJobId()
+
+    def setActiveJob(self, value):
+        self.setCurrentJobId(value)
+        
+    def currentJobId(self):
+        return self._currentJobId
+
+    def setCurrentJobId(self, value):
+        self._currentJobId = value;
         
     def nextJob(self):
         allJobs = self._baseScheduler.get_jobs()
@@ -331,6 +384,7 @@ class RadioScheduler:
             return None
 
     def getJob(self, name):
+        
         if name in self._jobs:
             return self._jobs[name]
         else:
@@ -369,20 +423,27 @@ def foo(job):
     
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    radioScheduler = RadioScheduler('waketime.json')
-    radioScheduler.set_testing()
-    print(str(radioScheduler))
-    radioScheduler.setJobHandler(foo)
+    radioScheduler = RadioScheduler('/var/radio/conf/waketime.json')
     radioScheduler.start()
-    logging.debug("next run time: %s" % radioScheduler.nextRunTime())
-    try:
-        while True:
-            print('.',end='')
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Interrupted")
-    finally:
-        radioScheduler.shutdown()
+    logging.debug(f"radioScheduler={str(radioScheduler)}")
+    job = radioScheduler.getJob('start_workday_at_five')
+    logging.debug(f"job={job}")
+    id = job.id()
+    logging.debug(f"id={id}")
+    radioScheduler.shutdown()
+##    radioScheduler.set_testing()
+##    print(str(radioScheduler))
+##    radioScheduler.setJobHandler(foo)
+##    radioScheduler.start()
+##    logging.debug("next run time: %s" % radioScheduler.nextRunTime())
+##    try:
+##        while True:
+##            print('.',end='')
+##            time.sleep(1)
+##    except KeyboardInterrupt:
+##        print("Interrupted")
+##    finally:
+##        radioScheduler.shutdown()
 ##    scheduler = BackgroundScheduler()
 ##    scheduler.add_job(func=foo, trigger='cron', day_of_week="mon-fri", hour='*', minute="0,10,20,30,40")
 ##    scheduler.start()

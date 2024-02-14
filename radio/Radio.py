@@ -320,6 +320,8 @@ def jobHandler(job):
         startHandler(job)
     elif job.name().startswith('stop') and active:
         stopHandler(job)
+    elif job.name().startswith('cont'):
+        contHandler(job)
 
        
 def startHandler(job):
@@ -327,7 +329,7 @@ def startHandler(job):
     global currentsender
     global active
     logging.debug("startHandler" + str(job))
-    sendername = job.sender() if job.sender() != None else currentsender['name']
+    sendername = getSendernameFromJob(job)
     sender = radioPlayer.getSenderByName(sendername)
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
         (filepath, url) = say.say_time_with_greeting('de')
@@ -340,6 +342,18 @@ def startHandler(job):
     radioPlayer.play(sender['name'])
     active = True
 
+def getSendernameFromJob(job):
+    global currentSender
+    return job.sender() if job.sender() != None else currentsender["name"]
+
+def contHandler(job):
+    global radioPlayer
+    global active
+    global currentSender
+    sendername = getSendernameFromJob(job) if haveInternet() else "my music"
+    radioPlayer.play(sendername)
+    active=True
+    
 def stopHandler(job):
     global radioPlayer
     global active
