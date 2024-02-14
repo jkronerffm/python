@@ -8,6 +8,8 @@ function setActive(name) {
    };
   xhttp.open("GET", "/radio/waketime/set_active?name=" + name, true);
   xhttp.send();
+  
+  showFlash('(De-)Aktivierung der Weckzeit war erfolgreich')
 }
 
 function editJob(name) {
@@ -32,3 +34,8 @@ function doClone(element) {
     window.location.replace(url);
 }
 
+function showFlash(message) {
+    var popup = document.getElementById('messagePopup');
+    popup.classList.toggle("show");
+    popup.innerText=message;
+}

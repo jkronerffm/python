@@ -7,6 +7,18 @@
     <title>{{ title }}</title>
   </head>
   <body>
+    <div class="popup">
+      <span class="popuptext" id="messagePopup">hello world!</span>
+    </div>
+    <script type="text/javascript">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            showFlash('{{message}}');
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </script>
     <h1>{{ header }}</h1>
     {% block content %}
     {% endblock %}

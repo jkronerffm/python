@@ -11,8 +11,9 @@ from datetime import datetime
 
 data = None
 radioSender = None
-filepath = "/var/radio/conf/waketime.json"
-filepathRadioSender = "/var/radio/conf/radio.json"
+confPath = "/var/radio/conf"
+filepath = f"{confPath}/waketime.json"
+filepathRadioSender = f"{confPath}/radio.json"
 
 def readData(filepath):
     obj = None

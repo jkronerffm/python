@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.getcwd()))
-from flask import Flask, redirect, request, render_template
+from flask import Flask, redirect, request, render_template, flash
 import waketime
 import radio
 import logging
@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 import uuid
 
 app = Flask(__name__)
-
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 @app.route("/")   
 @app.route("/radio")
 def init():
@@ -107,6 +107,7 @@ def doSaveSender():
     image = request.args.get('imageFile')
     logging.debug("doSaveSender: try to access request.files")
     radio.save(senderId, name, url, image)
+    flash("Der Sender wurde erfolgreich gespeichert")
     return redirect("/radio/sender")
 
 @app.route("/radio/waketime/")
@@ -119,7 +120,6 @@ def doWaketimeGrid():
     mainLanguage = getMainLanguage(acceptLanguages)
     logging.debug(f"waketimeGrid(accept_languages:{acceptLanguages})")
     logging.debug(f">> mainLanguage = {mainLanguage}")
-##    return waketime.build_grid(mainLanguage)
     jobList = waketime.createJobList(mainLanguage)
     headerList = waketime.getHeaderList(mainLanguage)
     logging.debug(f">> len(headerList) = {len(headerList)}, headerList={headerList}")    
@@ -136,7 +136,6 @@ def set_active():
 @app.route("/radio/waketime/edit")
 def doEditWaketime():
     name=request.args.get('name', default='', type=str)
-##    return waketime.build_edit(name)
     senderList, editJob = waketime.createEdit(name)
     return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=True, canClone=True)
 
@@ -153,6 +152,7 @@ def doSaveWaketime():
     theType= request.args.get('dateOrCron', "cron")
     timeAnnouncement = bool(request.args.get('timeannouncement', 'False')) if 'timeannouncement' in request.args else False
     waketime.save(name, theType, date, time, daysOfWeek, duration, sender, timeAnnouncement)
+    flash("Die Weckzeit wurde erfolgreich gespeichert")
     return redirect("/radio/waketime/grid")
 
 @app.route("/radio/waketime/delete")
@@ -161,6 +161,7 @@ def doDeleteWaketime():
     name=request.args.get('name', '')
     if name != '':
         waketime.delete(name)
+    flash("Die Weckzeit wurde erfolgreich gelöscht")
     return redirect("/radio/waketime/grid")
 
 @app.route("/radio/waketime/add")
@@ -174,9 +175,11 @@ def doCloneWaketime():
     logging.debug("doCloneWaketime")
     name = request.args.get('name', None)
     if name == None:
+        flash("Die Weckzeit kann nicht dupliziert werden")
         return redirect("/radio/waketime/grid")
     senderList, editJob = waketime.clone(name)
     logging.debug(f"doCloneWaketime(editJob={editJob})")
+    flash("Die Weckzeit wurde erfolgreich dupliziert")
     return render_template('waketimeEdit.html', header="Weckzeit duplizieren", senderList=senderList, job=editJob, canDelete=False, canClone=False)
 
 if __name__ == "main":
