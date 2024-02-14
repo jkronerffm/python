@@ -318,6 +318,12 @@ def add():
     name = new_name()
     return createEdit(name)
 
+def clone(name):
+    senderList, job = createEdit(name)
+    logging.debug(f"clone(name={name}, job={job})")
+    job['name'] = new_name()
+    return (senderList, job)
+    
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     dow = translate_daysOfWeek("mon,tue,wed")
@@ -328,3 +334,6 @@ if __name__ == "__main__":
     logging.debug(job)
     t = build_runtimeDay(job, 'de')
     logging.debug(f"build_runtimeDay({job}) returned {t})")
+    (senderList, job) = clone(job.name)
+    print(senderList)
+    print(job)

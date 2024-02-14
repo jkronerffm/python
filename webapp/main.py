@@ -138,7 +138,7 @@ def doEditWaketime():
     name=request.args.get('name', default='', type=str)
 ##    return waketime.build_edit(name)
     senderList, editJob = waketime.createEdit(name)
-    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=True)
+    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=True, canClone=True)
 
 @app.route("/radio/waketime/save")
 def doSaveWaketime():
@@ -167,7 +167,17 @@ def doDeleteWaketime():
 def doAddWaketime():
     logging.debug("doAddWaketime")
     senderList, editJob = waketime.add()
-    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=False)
+    return render_template('waketimeEdit.html', header="Weckzeit bearbeiten", senderList=senderList, job=editJob, canDelete=False, canClone=False)
+
+@app.route("/radio/waketime/clone")
+def doCloneWaketime():
+    logging.debug("doCloneWaketime")
+    name = request.args.get('name', None)
+    if name == None:
+        return redirect("/radio/waketime/grid")
+    senderList, editJob = waketime.clone(name)
+    logging.debug(f"doCloneWaketime(editJob={editJob})")
+    return render_template('waketimeEdit.html', header="Weckzeit duplizieren", senderList=senderList, job=editJob, canDelete=False, canClone=False)
 
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")

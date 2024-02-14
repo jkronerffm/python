@@ -26,4 +26,9 @@ function switchRuntime(dateOrCron) {
   }
 }
 
+function doClone(element) {
+    var name = document.getElementById("name").value
+    url = "/radio/waketime/clone?name="+name;
+    window.location.replace(url);
+}
 

@@ -55,7 +55,7 @@
             </tr>
             <tr>
               <td><label for="timecron">Zeit</label</td>
-              <td><input type="time" id="time" name="time" value="{{ job["crontime"] }}"></td>
+              <td><input type="time" id="timecron" name="time" value="{{ job["crontime"] }}"></td>
             </tr>
           </table>
         </div>
@@ -88,11 +88,15 @@
     </tr>
     <tr>
       <td colspan="5" style="text-align:center;">
-        <input class="stylebutton" type="submit" value="Speichern">
-        <input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')">
+        <input class="stylebutton" type="submit" value="Speichern" title="Weckzeit speichern">
+        <input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/radio/waketime/grid')" title="Zur&uuml;ck zur Weckzeit-Liste">
+        {% if canClone %}
+        <input class="stylebutton" type="button" value="Duplizieren" onclick="doClone(this)" title="Diese Weckzeit duplizieren">
+        {% endif %}
         {% if canDelete %}
         <input class="stylebutton" type="button"
                value="-"
+               title="Weckzeit l&ouml;schen"
                onclick="location.assign('/radio/waketime/delete?name={{  job["name"] }}')">
         {% endif %}
       </td>
