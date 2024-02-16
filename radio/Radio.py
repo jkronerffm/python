@@ -216,7 +216,9 @@ def draw_sender(sender, x, y):
             senderHeight = imageHeight if imageHeight > senderHeight else senderHeight
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
             sender['rect'] = pygame.Rect(x, y, imageWidth, imageHeight)
-            screen.blit(scaledImage, sender['rect'].topleft)
+            x_img = sender['rect'].left + (senderWidth - imageWidth) / 2
+            y_img = sender['rect'].top if (senderHeight < imageHeight) else sender['rect'].top + (senderHeight - imageHeight) / 2
+            screen.blit(scaledImage, (x_img, y_img))
             imageDrawn = True
     if not imageDrawn:
         s = draw_textRect(sender['rect'].size,sender['name'],WHITE, BLACK, BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
