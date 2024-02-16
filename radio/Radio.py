@@ -7,6 +7,7 @@ sys.path.append(os.path.join(basepath, "common"))
 from os.path import isfile
 import json
 import pygame
+import dictToObj
 from pygame.event import Event
 import math
 from datetime import datetime
@@ -29,6 +30,7 @@ SettingsFilepath = "/var/radio/conf/radio_settings.json"
 class SettingsType(Enum):
     Waketime = 1
     Radio = 2
+    Sound = 3
     
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
@@ -390,7 +392,15 @@ def changeWaketime(filepath):
 def changeRadio(filepath):
     global radioPlayer
     radioPlayer.readConfigFile(filepath)
-    
+
+def changeSound(filepath):
+    global radioPlayer
+    soundSettings = dictToObj.objFromJson(filepath)
+    if hasattr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'index'):
+        radioPlayer.setEqualizerByIndex(soundSettings.equalizer.index)
+    elif hasAttr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'name'):
+        radioPlayer.setEqualizerByName(soundSettings.equalizer.name)
+        
 def waketimeHandler(filepath, modificationTime):
     logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
     event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Waketime, 'Filepath': filepath})
@@ -400,6 +410,12 @@ def waketimeHandler(filepath, modificationTime):
 def radioHandler(filepath, modificationTime):
     logging.debug(f"radioHandler(filepath={filepath}): load config file")
     event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Radio, 'Filepath': filepath})
+    logging.debug(f">> post event {event}")
+    pygame.event.post(event)
+
+def soundHandler(filepath, modificationTime):
+    logging.debug(f"soundHandler(filepath={filepath}): load config file")
+    event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Sound, 'Filepath': filepath})
     logging.debug(f">> post event {event}")
     pygame.event.post(event)
 
@@ -425,6 +441,7 @@ if __name__ == "__main__":
     confDir = "/var/radio/conf"
     confFilepathRadio = os.path.join(confDir, "radio.json")
     confFilepathWaketime = os.path.join(confDir, "waketime.json")
+    confFilepathSound = os.path.join(confDir, "sound.json")
     radioPlayer = RadioPlayer(confFilepathRadio)
     senderWidth = (screenWidth - 2 * screenBorder) / 6
     senderHeight = 60
@@ -437,6 +454,7 @@ if __name__ == "__main__":
     watchDog = WatchDog.GetInstance()
     watchDog.watch(confFilepathRadio, radioHandler)
     watchDog.watch(confFilepathWaketime, waketimeHandler)
+    watchDog.watch(confFilepathSound, soundHandler)
     running = True
     active = False
     WHITE=(255,255,255)
@@ -482,8 +500,10 @@ if __name__ == "__main__":
                 elif event.type == SettingsEvent:
                     if event.SettingsType == SettingsType.Waketime:
                         changeWaketime(event.Filepath)
-                    if event.SettingsType == SettingsType.Radio:
+                    elif event.SettingsType == SettingsType.Radio:
                         changeRadio(event.Filepath)
+                    elif event.SettingsType == SettingsType.Sound:
+                        changeSound(event.Filepath)
         
             pygame.display.flip()
             clock.tick(60)

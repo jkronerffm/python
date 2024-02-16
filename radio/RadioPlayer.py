@@ -4,6 +4,7 @@ import json
 import logging
 from playYoutube import getYoutubeStreamUrl
 from fileListRandomizer import shufflePlayList
+from Equalizer import Equalizer
 import threading
 
 class RadioPlayer:
@@ -117,7 +118,16 @@ class RadioPlayer:
         return self.mediaPlayer().audio_get_volume()
 
     def initEqualizer(self):
-        equalizer = vlc.libvlc_audio_equalizer_new_from_preset(11)
+        self.setEqualizerByIndex(11)
+
+    def setEqualizerByIndex(self, index):
+        equalizerInstance = Equalizer.GetInstance()
+        equalizer = equalizerInstance.getEqualizerByIndex(11)
+        self.mediaPlayer().set_equalizer(equalizer)
+
+    def setEqualizerByName(self, name):
+        equalizerInstance = Equalizer.GetInstance()
+        equalizer = equalizerInstance.getEqualizerByName(name)
         self.mediaPlayer().set_equalizer(equalizer)
         
     @staticmethod
