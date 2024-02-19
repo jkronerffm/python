@@ -33,6 +33,9 @@ class WatchDog:
         lastTime = 0
         changedFile = ""
         for file in files:
+            basename = os.path.basename(file)
+            if basename.startswith('.') or basename.endswith('.swp'):
+                continue
             mtime = os.path.getmtime(file)
             if mtime > lastTime:
                 lastTime = mtime
