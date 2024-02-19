@@ -291,7 +291,7 @@ def retranslate_daysOfWeek(daysOfWeek):
     return ",".join(translation)
         
 def translate_daysOfWeek(daysOfWeek):
-    listOfDaysOfWeek = daysOfWeek if daysOfWeek is list else daysOfWeek.split(",")
+    listOfDaysOfWeek = daysOfWeek if type(daysOfWeek) is list else daysOfWeek.split(",")
 
     value = 0
     translation=""
@@ -329,7 +329,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     dow = translate_daysOfWeek("mon,tue,wed")
     logging.debug(f"translate_daysOfWeek returned {dow}")
-    days = translate_days('mon,tue,wed', 'de')
+    dow = translate_daysOfWeek(["mon", "tue", "wed"])
+    logging.debug(f"translate_daysOfWeek returned {dow}")
+    days = translate_days('mon-wed', 'de')
     logging.debug(f"translate_days returned {days}")
     job = getJob('start_workday_halfpastfive')
     logging.debug(job)
