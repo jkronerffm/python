@@ -36,10 +36,7 @@ def point_in_rect(point,rect):
     x1, y1, w, h = rect
     x2, y2 = x1+w, y1+h
     x, y = point
-    if (x1 < x and x < x2):
-        if (y1 < y and y < y2):
-            return True
-    return False
+    return (x > x1 and x < x2) and (y > y1 and y < y2)
 
 def check_clickOnSender(pos):
     global data
@@ -216,13 +213,15 @@ def draw_sender(sender, x, y):
             imageWidth = 64
             imageHeight = imageWidth * height / width
             senderHeight = imageHeight if imageHeight > senderHeight else senderHeight
+            sender['rect'].height = senderHeight
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
-            sender['rect'] = pygame.Rect(x, y, imageWidth, imageHeight)
+##            logging.debug(f"draw_sender(sender=<name={sender['name']},rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
             x_img = sender['rect'].left + (senderWidth - imageWidth) / 2
             y_img = sender['rect'].top if (senderHeight < imageHeight) else sender['rect'].top + (senderHeight - imageHeight) / 2
             screen.blit(scaledImage, (x_img, y_img))
             imageDrawn = True
     if not imageDrawn:
+##        logging.debug(f"draw_sender(sender=<name={sender['name']}, rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
         s = draw_textRect(sender['rect'].size,sender['name'],WHITE, BLACK, BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
         screen.blit(s, sender['rect'].topleft)
     
@@ -422,12 +421,14 @@ def soundHandler(filepath, modificationTime):
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
     pygame.init()
+    info = pygame.display.Info()
+    
     if len(sys.argv) >= 2:
         screenWidth = int(sys.argv[1])
         screenHeight = int(sys.argv[2])
     else:
-        screenWidth = 800
-        screenHeight = 480
+        screenWidth = info.current_w
+        screenHeight = info.current_h
     volDistX = 300
     volDistY = 10
     spkDistX = 350
