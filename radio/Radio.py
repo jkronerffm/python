@@ -193,6 +193,14 @@ def draw_Volume_Range(surface, pos, dist, width, yDef, num, color):
     polygon = [(px0, py0), (px0, py0 - 10), (px1, py1), (px1, py0)]
     draw_polygon_alpha(surface, (255,255,255,128), polygon)
 
+def drawCloseButton():
+    global closeButtonPos
+    global closeButton
+
+    closeButton = pygame.draw.circle(screen, RED, closeButtonPos, 25)
+    pygame.draw.circle(screen, WHITE, closeButtonPos, 20)
+    pygame.draw.circle(screen, RED, closeButtonPos, 15)
+    
 def draw_sender(sender, x, y):
     global screenWidth, screenHeight
     global screenBorder
@@ -232,6 +240,23 @@ def draw_sender(sender, x, y):
         senderHeight = 60
     return (x, y, imageWidth, imageHeight)
     
+def drawTitle(topY):
+    global ScreenWidth, screenHeight
+    global WHITE, BLACK, font18
+    with MetaBackgroundWorker.Lock:
+        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, WHITE, BLACK, WHITE, font18,200,(10,10), True)
+        xSender = (screenWidth - 250) / 2
+        ySender = (screenHeight - topY - 240) / 2 + topY
+        screen.blit(senderRect, [xSender, ySender])
+        if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":        
+            (textWidth, textHeight) = font18.size(MetaBackgroundWorker.CurrentTitle)
+            textWidth += 50
+            textHeight += 50
+            titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, WHITE, BLACK, WHITE, font18, 200, (10, 10), True)
+            xTitle = (screenWidth - textWidth) / 2
+            yTitle = ySender + 80
+            screen.blit(titleRect, [xTitle, yTitle])    
+            
 def draw_radio():
     global x, y
     global screen
@@ -266,19 +291,8 @@ def draw_radio():
             topY = y + imageHeight
     currentname = font18.render(currentsender['name'], True, BLACK)
 
-    with MetaBackgroundWorker.Lock:
-        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, WHITE, BLACK, WHITE, font18,200,(10,10), True)
-        xSender = (screenWidth - 250) / 2
-        ySender = (screenHeight - topY - 240) / 2 + topY
-        screen.blit(senderRect, [xSender, ySender])
-        if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":
-            titleRect = draw_textRect((450, 60), MetaBackgroundWorker.CurrentTitle, WHITE, BLACK, WHITE, font18, 200, (10, 10), True)
-            xTitle = (screenWidth - 450) / 2
-            yTitle = ySender + 80
-            screen.blit(titleRect, [xTitle, yTitle])
-    closeButton = pygame.draw.circle(screen, RED, closeButtonPos, 25)
-    pygame.draw.circle(screen, WHITE, closeButtonPos, 20)
-    pygame.draw.circle(screen, RED, closeButtonPos, 15)
+    drawTitle(topY)
+    drawCloseButton()
     # volume settings
     # f(x) = 10 + x * 5
     x = screenWidth - volDistX
