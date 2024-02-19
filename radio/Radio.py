@@ -4,10 +4,14 @@ from pathlib import Path
 basepath = Path(os.path.dirname(os.path.realpath(__file__))).parent.absolute()
 sys.path.append(os.path.join(basepath, "have_internet"))
 sys.path.append(os.path.join(basepath, "common"))
+sys.path.append(os.path.join(basepath, "ircontrol"))
 from os.path import isfile
 import json
 import pygame
+import pigpio
 import dictToObj
+from ircontrol import ircontrol
+from ircontrol import LastPressed
 from pygame.event import Event
 import math
 from datetime import datetime
@@ -23,8 +27,11 @@ from filewatcher import WatchDog
 from enum import Enum
 import say
 
+pygame.init()
+
 MetaEvent = pygame.event.custom_type() + 1
 SettingsEvent = pygame.event.custom_type() + 2
+IrEvent = pygame.event.custom_type() + 3
 SettingsFilepath = "/var/radio/conf/radio_settings.json"
 
 class SettingsType(Enum):
@@ -32,11 +39,36 @@ class SettingsType(Enum):
     Radio = 2
     Sound = 3
 
+class IrKey(Enum):
+    Power = 1
+    Pause = 2
+    VolumeUp = 3
+    VolumeDown = 4
+
+    @staticmethod
+    def FromButtonKey(buttonKey):
+        result = 0
+        if buttonKey == 'power':
+            result = IrKey.Power
+        elif buttonKey == 'ok':
+            result = IrKey.Pause
+        elif buttonKey == 'vol+':
+            result = IrKey.VolumeUp
+        elif buttonKey == 'vol-':
+            result = IrKey.VolumeDown
+        return result
+    
 class Colors:
     WHITE=(255,255,255)
     BLACK = (0,0,0)
     RED = (255, 0, 0)
-        
+      
+class Fonts:
+    font14 = pygame.font.SysFont('Arial', 14, True, False)
+    font18 = pygame.font.SysFont('Arial', 18, True, False)
+    bigfont = pygame.font.SysFont('Arial', 128, True, False)
+    medfont = pygame.font.SysFont('Arial', 64, True, False)
+    
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
     x2, y2 = x1+w, y1+h
@@ -234,7 +266,7 @@ def draw_sender(sender, x, y):
             imageDrawn = True
     if not imageDrawn:
 ##        logging.debug(f"draw_sender(sender=<name={sender['name']}, rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
-        s = draw_textRect(sender['rect'].size,sender['name'],Colors.WHITE, Colors.BLACK, Colors.BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
+        s = draw_textRect(sender['rect'].size,sender['name'],Colors.WHITE, Colors.BLACK, Colors.BLACK, Fonts.font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
         screen.blit(s, sender['rect'].topleft)
     
     x = x + senderWidth
@@ -246,17 +278,16 @@ def draw_sender(sender, x, y):
     
 def drawTitle(topY):
     global ScreenWidth, screenHeight
-    global font18
     with MetaBackgroundWorker.Lock:
-        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18,200,(10,10), True)
+        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18,200,(10,10), True)
         xSender = (screenWidth - 250) / 2
         ySender = (screenHeight - topY - 240) / 2 + topY
         screen.blit(senderRect, [xSender, ySender])
         if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":        
-            (textWidth, textHeight) = font18.size(MetaBackgroundWorker.CurrentTitle)
+            (textWidth, textHeight) = Fonts.font18.size(MetaBackgroundWorker.CurrentTitle)
             textWidth += 50
             textHeight += 50
-            titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18, 200, (10, 10), True)
+            titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18, 200, (10, 10), True)
             xTitle = (screenWidth - textWidth) / 2
             yTitle = ySender + 80
             screen.blit(titleRect, [xTitle, yTitle])    
@@ -269,7 +300,6 @@ def draw_radio():
     global data
     global senderWidth
     global senderHeight
-    global font14, font18
     global currentname
     global closeButton
     global image, imagePos
@@ -291,7 +321,7 @@ def draw_radio():
         (x, y, imageWidth, imageHeight) = draw_sender(sender, x, y)
         if (y + imageHeight) > topY:
             topY = y + imageHeight
-    currentname = font18.render(currentsender['name'], True, Colors.BLACK)
+    currentname = Fonts.font18.render(currentsender['name'], True, Colors.BLACK)
 
     drawTitle(topY)
     drawCloseButton()
@@ -303,30 +333,29 @@ def draw_radio():
     polygon = draw_Volume_Range(screen,(x,y), (20,5), 10, 10, 10, Colors.RED)
 
     volumestr = "{0}".format(volume)
-    textRectVolume = draw_textRect((60, 30),volumestr, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18, 128,[5,5])
+    textRectVolume = draw_textRect((60, 30),volumestr, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18, 128,[5,5])
     screen.blit(textRectVolume, (x+200-10, y - 30))
     draw_speaker(screen, (screenWidth - spkDistX, screenHeight - spkDistY), 10, (160, 0, 0,200))
 
 def draw_clock():
     global screen
-    global bigfont, medfont, font18
     global screenWidth, screenHeight
     global radioScheduler
 
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
-    nrt = font18.render(nextRunTimeDisplay, True, Colors.WHITE)
+    nrt = Fonts.font18.render(nextRunTimeDisplay, True, Colors.WHITE)
     screen.blit(nrt, [0, 0])
     now = localtime()
     clock = strftime("%H:%M",now)
     cal = strftime("%d.%m.%Y", now)
-    time = bigfont.render(clock, True, Colors.WHITE)
+    time = Fonts.bigfont.render(clock, True, Colors.WHITE)
     width = time.get_width()
     height = time.get_height()
     x = (screenWidth - width) / 2
     y = (screenHeight - height) / 2
     screen.blit(time, [x,y])
-    calendar = medfont.render(cal, True, Colors.WHITE)
+    calendar = Fonts.medfont.render(cal, True, Colors.WHITE)
     width = calendar.get_width()
     x = (screenWidth - width) / 2
     y = y + height + 20
@@ -434,10 +463,23 @@ def soundHandler(filepath, modificationTime):
     logging.debug(f">> post event {event}")
     pygame.event.post(event)
 
+def irCallback(buttonCode):
+    if LastPressed.ButtonCode != buttonCode:
+        LastPressed.Initialize(buttonCode)
+        buttonkey = ircontrol.GetHashKey(buttonCode)
+        eventKey = IrKey.FromButtonKey(buttonkey)
+        event = pygame.event.Event(IrEvent, {'IRKey': eventKey})
+        logging.debug(f"irCallback(event={event})")
+        pygame.event.post(event)
+    elif LastPressed.HasElapsed():
+        LastPressed.Release()
+
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
-    pygame.init()
     info = pygame.display.Info()
+    ircontrol.ReadHashes("/var/radio/conf/irsony.json")
+    pi = pigpio.pi()
+    irc = ircontrol(pi, 17, irCallback, 5)
     
     if len(sys.argv) >= 2:
         screenWidth = int(sys.argv[1])
@@ -479,10 +521,7 @@ if __name__ == "__main__":
     image = pygame.image.load(backgroundfile)
     image = pygame.transform.scale(image, [screenWidth, screenHeight])
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
-    font14 = pygame.font.SysFont('Arial', 14, True, False)
-    font18 = pygame.font.SysFont('Arial', 18, True, False)
-    bigfont = pygame.font.SysFont('Arial', 128, True, False)
-    medfont = pygame.font.SysFont('Arial', 64, True, False)
+
     closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 25)
     buttonDown=False
     MetaBackgroundWorker.Create(radioPlayer, metaCallback)
@@ -518,7 +557,15 @@ if __name__ == "__main__":
                         changeRadio(event.Filepath)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
-        
+                elif event.type == IrEvent:
+                    if event.IRKey == IrKey.Power:
+                        if active:
+                            radioPlayer.stop()
+                            active = False
+                        else:
+                            radioPlayer.play(currentsender['name'])
+                            active=True
+
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:
@@ -529,4 +576,5 @@ if __name__ == "__main__":
     pygame.quit()
     radioPlayer.stop()
     radioScheduler.shutdown()
+    pi.stop()
     sys.exit()
