@@ -438,6 +438,7 @@ def changeRadio(filepath):
     radioPlayer.readConfigFile(filepath)
 
 def changeSound(filepath):
+    logging.debug(f"changeSound(filepath={filepath})")
     global radioPlayer
     soundSettings = dictToObj.objFromJson(filepath)
     if hasattr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'index'):
