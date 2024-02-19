@@ -106,7 +106,7 @@ def doSaveSender():
     url = request.args.get('url')
     image = request.args.get('imageFile')
     logging.debug("doSaveSender: try to access request.files")
-    radio.save(senderId, name, url, image)
+    radio.saveSender(senderId, name, url, image)
     flash("Der Sender wurde erfolgreich gespeichert")
     return redirect("/radio/sender")
 
