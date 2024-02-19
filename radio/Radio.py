@@ -31,7 +31,12 @@ class SettingsType(Enum):
     Waketime = 1
     Radio = 2
     Sound = 3
-    
+
+class Colors:
+    WHITE=(255,255,255)
+    BLACK = (0,0,0)
+    RED = (255, 0, 0)
+        
 def point_in_rect(point,rect):
     x1, y1, w, h = rect
     x2, y2 = x1+w, y1+h
@@ -197,16 +202,15 @@ def drawCloseButton():
     global closeButtonPos
     global closeButton
 
-    closeButton = pygame.draw.circle(screen, RED, closeButtonPos, 25)
-    pygame.draw.circle(screen, WHITE, closeButtonPos, 20)
-    pygame.draw.circle(screen, RED, closeButtonPos, 15)
+    closeButton = pygame.draw.circle(screen, Colors.RED, closeButtonPos, 25)
+    pygame.draw.circle(screen, Colors.WHITE, closeButtonPos, 20)
+    pygame.draw.circle(screen, Colors.RED, closeButtonPos, 15)
     
 def draw_sender(sender, x, y):
     global screenWidth, screenHeight
     global screenBorder
     global senderWidth, senderHeight
     global screen
-    global BLACK, WHITE, RED
 
     sender['rect'] = pygame.Rect(x,y,senderWidth, 60)
     imageDrawn = False
@@ -230,7 +234,7 @@ def draw_sender(sender, x, y):
             imageDrawn = True
     if not imageDrawn:
 ##        logging.debug(f"draw_sender(sender=<name={sender['name']}, rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
-        s = draw_textRect(sender['rect'].size,sender['name'],WHITE, BLACK, BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
+        s = draw_textRect(sender['rect'].size,sender['name'],Colors.WHITE, Colors.BLACK, Colors.BLACK, font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
         screen.blit(s, sender['rect'].topleft)
     
     x = x + senderWidth
@@ -242,9 +246,9 @@ def draw_sender(sender, x, y):
     
 def drawTitle(topY):
     global ScreenWidth, screenHeight
-    global WHITE, BLACK, font18
+    global font18
     with MetaBackgroundWorker.Lock:
-        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, WHITE, BLACK, WHITE, font18,200,(10,10), True)
+        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18,200,(10,10), True)
         xSender = (screenWidth - 250) / 2
         ySender = (screenHeight - topY - 240) / 2 + topY
         screen.blit(senderRect, [xSender, ySender])
@@ -252,7 +256,7 @@ def drawTitle(topY):
             (textWidth, textHeight) = font18.size(MetaBackgroundWorker.CurrentTitle)
             textWidth += 50
             textHeight += 50
-            titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, WHITE, BLACK, WHITE, font18, 200, (10, 10), True)
+            titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18, 200, (10, 10), True)
             xTitle = (screenWidth - textWidth) / 2
             yTitle = ySender + 80
             screen.blit(titleRect, [xTitle, yTitle])    
@@ -268,9 +272,7 @@ def draw_radio():
     global font14, font18
     global currentname
     global closeButton
-    global ccloseButtonPos
     global image, imagePos
-    global BLACK, WHITE, RED
     global buttonDown
     global focusOnSender
     global volume
@@ -280,7 +282,7 @@ def draw_radio():
     global spkDistX
     global spkDistY
     
-    pygame.draw.rect(screen,WHITE, (2,2,screenWidth - 4, screenHeight - 4))
+    pygame.draw.rect(screen,Colors.WHITE, (2,2,screenWidth - 4, screenHeight - 4))
     x = screenBorder
     y = screenBorder
     topY = 0
@@ -289,7 +291,7 @@ def draw_radio():
         (x, y, imageWidth, imageHeight) = draw_sender(sender, x, y)
         if (y + imageHeight) > topY:
             topY = y + imageHeight
-    currentname = font18.render(currentsender['name'], True, BLACK)
+    currentname = font18.render(currentsender['name'], True, Colors.BLACK)
 
     drawTitle(topY)
     drawCloseButton()
@@ -298,10 +300,10 @@ def draw_radio():
     x = screenWidth - volDistX
     y = screenHeight - volDistY
 
-    polygon = draw_Volume_Range(screen,(x,y), (20,5), 10, 10, 10, RED)
+    polygon = draw_Volume_Range(screen,(x,y), (20,5), 10, 10, 10, Colors.RED)
 
     volumestr = "{0}".format(volume)
-    textRectVolume = draw_textRect((60, 30),volumestr, WHITE, BLACK, WHITE, font18, 128,[5,5])
+    textRectVolume = draw_textRect((60, 30),volumestr, Colors.WHITE, Colors.BLACK, Colors.WHITE, font18, 128,[5,5])
     screen.blit(textRectVolume, (x+200-10, y - 30))
     draw_speaker(screen, (screenWidth - spkDistX, screenHeight - spkDistY), 10, (160, 0, 0,200))
 
@@ -313,18 +315,18 @@ def draw_clock():
 
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
-    nrt = font18.render(nextRunTimeDisplay, True, WHITE)
+    nrt = font18.render(nextRunTimeDisplay, True, Colors.WHITE)
     screen.blit(nrt, [0, 0])
     now = localtime()
     clock = strftime("%H:%M",now)
     cal = strftime("%d.%m.%Y", now)
-    time = bigfont.render(clock, True, WHITE)
+    time = bigfont.render(clock, True, Colors.WHITE)
     width = time.get_width()
     height = time.get_height()
     x = (screenWidth - width) / 2
     y = (screenHeight - height) / 2
     screen.blit(time, [x,y])
-    calendar = medfont.render(cal, True, WHITE)
+    calendar = medfont.render(cal, True, Colors.WHITE)
     width = calendar.get_width()
     x = (screenWidth - width) / 2
     y = y + height + 20
@@ -472,9 +474,6 @@ if __name__ == "__main__":
     watchDog.watch(confFilepathSound, soundHandler)
     running = True
     active = False
-    WHITE=(255,255,255)
-    BLACK = (0,0,0)
-    RED = (255, 0, 0)
     clock = pygame.time.Clock()
     backgroundfile = radioPlayer.background()
     image = pygame.image.load(backgroundfile)
@@ -490,7 +489,7 @@ if __name__ == "__main__":
     logging.debug("currentsender=%s" % currentsender)
     while running:
         try:
-            screen.fill(BLACK)
+            screen.fill(Colors.BLACK)
             if active:
                 draw_radio()
             else:
