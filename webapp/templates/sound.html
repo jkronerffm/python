@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<form method="GET" action="/radio/sound/change">
+	<table>
+		<tr>
+			<td>
+				<label for="equalizer">Equalizer:</label>
+			</td>
+			<td>
+				<select id="equalizer" name="equalizer">
+					{% for equalizer in equalizers %}
+						<option value="{{ equalizer['index'] }}"
+						{% if equalizer['index'] == selectedEqualizer %}
+							selected
+						{% endif %}
+						>{{ equalizer['name'] }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<input class="stylebutton" type="submit" value="Verwenden"/>
+				<input class="stylebutton" type="button" value="Zur&uuml;ck" onclick="location.assign('/radio')"/>
+			</td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 from flask import Flask, redirect, request, render_template, flash
 import waketime
 import radio
+from sound import Sound
 import logging
 from common import dictToObj
 import base64
@@ -182,6 +183,22 @@ def doCloneWaketime():
     flash("Die Weckzeit wurde erfolgreich dupliziert")
     return render_template('waketimeEdit.html', header="Weckzeit duplizieren", senderList=senderList, job=editJob, canDelete=False, canClone=False)
 
+@app.route("/radio/sound/edit")
+def doSoundEdit():
+    sound = Sound()
+    equalizers = sound.getEqualizers()
+    selectedEqualizer = sound.getSelectedEqualizer()
+    logging.debug(f"doSoundEdit(equalizers={equalizers}, selected={selectedEqualizer})")
+    return render_template('sound.html', header="Sound Einstellungen", equalizers = equalizers, selectedEqualizer=selectedEqualizer)
+    
+@app.route("/radio/sound/change")
+def doChangeSound():
+    soundIndex = request.args.get('equalizer', None)
+    if soundIndex != None:
+        sound = Sound()
+        sound.change(int(soundIndex))
+    return redirect('/radio')
+        
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
     
