@@ -5,6 +5,7 @@ from common.dictToObj import obj, objFromJson, objToDict
 import pigpio
 import time
 import json
+import logging
 
 class ircontrol:
     def __init__(self, pi, gpio, callback, timeout=5):
@@ -88,16 +89,18 @@ class LastPressed:
         LastPressed.ButtonCode = 0
         LastPressed.Ticks = 0
 
-def callback(hash):
-    if LastPressed.ButtonCode != hash:
-        LastPressed.Initialize(hash)
-        hashKey = ircontrol.GetHashKey(hash)
-        print("%x" % hash, hashKey)
+def callback(buttonKey):
+    logging.debug(f"callback(buttonKey={buttonKey})")
+    if LastPressed.ButtonCode != buttonKey:
+        LastPressed.Initialize(buttonKey)
+        hashKey = ircontrol.GetHashKey(buttonKey)
+        print("%x" % buttonKey, hashKey)
     elif LastPressed.HasElapsed():
         LastPressed.Release()
         
 
 if __name__ == "__main__":
+    logging.basicConfig(level = logging.DEBUG)
     ircontrol.ReadHashes('/var/radio/conf/irsony.json')
     pi = pigpio.pi()
     ircontrol(pi, 17, callback, 5)

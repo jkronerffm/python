@@ -178,20 +178,37 @@ def check_click(pos):
     global radioPlayer
     logging.debug("check_click(%s)" % str(pos))
     if not active:
-        if currentsender != None:
-            logging.debug("play(%s)" % currentsender)
-            radioPlayer.play(currentsender['name'])
-        return False;
+        return activate()
     if point_in_rect(pos, closeButton):
-        save_Settings(currentsender['name'], volume)
-        active = False
-        radioPlayer.stop()
+        deactivate()
     elif check_clickOnSender(pos):
         return True
     elif check_clickOnVolumeSettings(pos):
         return True
 
     return True
+
+def deactivate():
+    global radioPlayer
+    global currentsender
+    global volume
+    global active
+    save_Settings(currentsender['name'], volume)
+    active = False
+    radioPlayer.stop()
+    
+def activate():
+    global active
+    global radioPlayer
+    global currentsender
+    if active:
+        deactivate()
+        return True
+    active=True
+    if currentsender != None:
+        logging.debug(f"activate(currentsender={currentsender})")
+        radioPlayer.play(currentsender['name'])
+    return False
 
 def draw_textRect(size, text, bg, fg, borderColor, font, alpha, padding=[0,0], center=False):
     s = pygame.Surface(size, pygame.SRCALPHA)
@@ -253,6 +270,7 @@ def draw_sender(sender, x, y):
     global screenBorder
     global senderWidth, senderHeight
     global screen
+    global focusOnSender
 
     sender['rect'] = pygame.Rect(x,y,senderWidth, 60)
     imageDrawn = False
@@ -599,12 +617,7 @@ if __name__ == "__main__":
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
                     if event.IrKey == IrKey.Pause:
-                        if active:
-                            radioPlayer.stop()
-                            active = False
-                        else:
-                            radioPlayer.play(currentsender['name'])
-                            active=True
+                        activate()
                     elif event.IrKey == IrKey.Down:
                         logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
                     elif event.IrKey == IrKey.Left and active:
