@@ -39,23 +39,33 @@ class SettingsType(Enum):
     Radio = 2
     Sound = 3
 
-class IrKey(Enum):
+class IrKey:
     Power = 1
     Pause = 2
     VolumeUp = 3
     VolumeDown = 4
+    Left = 5
+    Right = 6
+    Up = 7
+    Down = 8
+    Display = 9
 
     @staticmethod
     def FromButtonKey(buttonKey):
+        KeyMapping = {
+            'power': IrKey.Power,
+            'ok': IrKey.Pause,
+            'vol+': IrKey.VolumeUp,
+            'vol-': IrKey.VolumeDown,
+            'up': IrKey.Up,
+            'down': IrKey.Down,
+            'left': IrKey.Left,
+            'right': IrKey.Right,
+            'display': IrKey.Display
+        }
         result = 0
-        if buttonKey == 'power':
-            result = IrKey.Power
-        elif buttonKey == 'ok':
-            result = IrKey.Pause
-        elif buttonKey == 'vol+':
-            result = IrKey.VolumeUp
-        elif buttonKey == 'vol-':
-            result = IrKey.VolumeDown
+        if buttonKey in KeyMapping:
+            result = KeyMapping[buttonKey]
         return result
     
 class Colors:
@@ -259,13 +269,11 @@ def draw_sender(sender, x, y):
             senderHeight = imageHeight if imageHeight > senderHeight else senderHeight
             sender['rect'].height = senderHeight
             scaledImage = pygame.transform.scale(image, (imageWidth, imageHeight))
-##            logging.debug(f"draw_sender(sender=<name={sender['name']},rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
             x_img = sender['rect'].left + (senderWidth - imageWidth) / 2
             y_img = sender['rect'].top if (senderHeight < imageHeight) else sender['rect'].top + (senderHeight - imageHeight) / 2
             screen.blit(scaledImage, (x_img, y_img))
             imageDrawn = True
     if not imageDrawn:
-##        logging.debug(f"draw_sender(sender=<name={sender['name']}, rect=<topleft={sender['rect'].topleft}, size={sender['rect'].size}>>)")
         s = draw_textRect(sender['rect'].size,sender['name'],Colors.WHITE, Colors.BLACK, Colors.BLACK, Fonts.font14, 200 if (buttonDown and focusOnSender and sender == currentsender) else 128, [10,10], True)
         screen.blit(s, sender['rect'].topleft)
     
@@ -381,8 +389,7 @@ def startHandler(job):
 
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
         (filepath, url) = say.say_time_with_greeting('de')
-        radioPlayer.playUrl(url)
-        time.sleep(5)
+        radioPlayer.playUrl(url,True)
         
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
@@ -409,7 +416,7 @@ def stopHandler(job):
     
 def onAddJob(name, job):
     global radioScheduler
-    print("onAddJob(name=%s, job=%s)" % (name, str(job)))
+    logging.debug("onAddJob(name=%s, job=%s)" % (name, str(job)))
 
 def metaCallback(sender, title):
     global radioPlayer
@@ -445,7 +452,7 @@ def changeSound(filepath):
         radioPlayer.setEqualizerByIndex(soundSettings.equalizer.index)
     elif hasAttr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'name'):
         radioPlayer.setEqualizerByName(soundSettings.equalizer.name)
-        
+
 def waketimeHandler(filepath, modificationTime):
     logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
     event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Waketime, 'Filepath': filepath})
@@ -469,11 +476,40 @@ def irCallback(buttonCode):
         LastPressed.Initialize(buttonCode)
         buttonkey = ircontrol.GetHashKey(buttonCode)
         eventKey = IrKey.FromButtonKey(buttonkey)
-        event = pygame.event.Event(IrEvent, {'IRKey': eventKey})
+        event = pygame.event.Event(IrEvent, {'IrKey': eventKey})
         logging.debug(f"irCallback(event={event})")
         pygame.event.post(event)
     elif LastPressed.HasElapsed():
         LastPressed.Release()
+
+def toggleVolume(up):
+    global volume
+    if up:
+        if volume < 100:
+            volume+=2
+    else:
+        if volume > 0:
+            volume -= 2
+    set_Volume(volume)
+
+def sayTime():
+    (filepath, url) = say.say_time('de')
+    radioPlayer.playUrl(url, True)
+    logging.debug(f"sayTime(url={url})")
+    os.remove(filepath)
+
+def nextSender():
+    global radioPlayer
+    global currentsender
+    nextSender = radioPlayer.getNextSender(currentsender["name"])
+    radioPlayer.play(nextSender['name'])
+    currentsender = nextSender
+
+def previousSender():
+    global radioPlayer
+    previousSender = radioPlayer.getPreviousSender(currentsender["name"])
+    radioPlayer.play(previousSender['name'])
+    currentSender = nextSender
 
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
@@ -482,12 +518,15 @@ if __name__ == "__main__":
     pi = pigpio.pi()
     irc = ircontrol(pi, 17, irCallback, 5)
     
-    if len(sys.argv) >= 2:
+    if len(sys.argv) == 2 and sys.argv[1] == "--fullscreen":
+        screenWidth = info.current_w
+        screenHeight = info.current_h
+    elif len(sys.argv) > 2:
         screenWidth = int(sys.argv[1])
         screenHeight = int(sys.argv[2])
     else:
-        screenWidth = info.current_w
-        screenHeight = info.current_h
+        screenWidth = 800
+        screenHeight = 400
     volDistX = 300
     volDistY = 10
     spkDistX = 350
@@ -559,13 +598,29 @@ if __name__ == "__main__":
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
-                    if event.IRKey == IrKey.Power:
+                    if event.IrKey == IrKey.Pause:
                         if active:
                             radioPlayer.stop()
                             active = False
                         else:
                             radioPlayer.play(currentsender['name'])
                             active=True
+                    elif event.IrKey == IrKey.Down:
+                        logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
+                    elif event.IrKey == IrKey.Left and active:
+                        logging.debug(f"IRControl-->Left: switch to previous radio sender")
+                        previousSender()
+                    elif event.IrKey == IrKey.Right and active:
+                        logging.debug(f"IRControl-->Right: switch to next radio sender")
+                        nextSender()
+                    elif event.IrKey == IrKey.VolumeUp and active:
+                        logging.debug(f"IRControl-->VolumeUp: increase volume")
+                        toggleVolume(True)
+                    elif event.IrKey == IrKey.VolumeDown and active:
+                        logging.debug(f"IRControl-->VolumeDown: decrease volume")
+                        toggleVolume(False)
+                    elif event.IrKey == IrKey.Display and not active:
+                        sayTime()
 
             pygame.display.flip()
             clock.tick(60)

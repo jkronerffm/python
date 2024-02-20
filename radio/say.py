@@ -30,11 +30,21 @@ def get_greeting(time):
         return "Guten Tag."
     return "Gute Nacht."
 
-def say_time_with_greeting(language):
+def get_time():
     now = datetime.now()
     currentTime = fuzzyTime.get_fuzzy_time(now)
+    text = f"Es ist {currentTime}."
+    return (now, text)
+    
+def say_time(language):
+    now, text = get_time()
+    logging.debug(f"say_time(language={language}): {text}")
+    return say(text, language)
+
+def say_time_with_greeting(language):
+    now, timeText = get_time()
     greeting = get_greeting(now)
-    text = f"{greeting}. Es ist {currentTime}."
+    text = f"{greeting}. {timeText}"
     return say(text, language)
 
 if __name__ == "__main__":
@@ -42,5 +52,5 @@ if __name__ == "__main__":
     radioPlayer = RadioPlayer.RadioPlayer("/var/radio/conf/radio.json")
     radioPlayer.setVolume(75)
     filepath, url = say_time_with_greeting('de')
-    radioPlayer.playUrl(url)
+    radioPlayer.playUrl(url, True)
     

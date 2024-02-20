@@ -32,6 +32,23 @@ class RadioPlayer:
     def sender(self):
         return self._senderData['sender']
 
+    def getNextSender(self, senderName):
+        senderList = self.sender()
+        index = [index for index, sender in enumerate(senderList) if sender['name'] == senderName][0]
+        logging.debug(f"getNextSender(index={index}, senderName={senderName})")
+        index = index + 1 if index < (len(senderList) - 1) else 0
+        nextSender = senderList[index]
+        logging.debug(f"getNextSender(senderName={senderName}) => {nextSender}")
+        return nextSender
+
+    def getPreviousSender(self, senderName):
+        senderList = self.sender()
+        index = [index for index, sender in enumerate(senderList) if sender['name'] == senderName][0]
+        logging.debug(f"getNextSender(index={index}, senderName={senderName})")
+        index = index - 1 if index > 0 else (len(senderList)-1)
+        previousSender = senderList[index]
+        return previousSender
+    
     def urlEndsWith(self, name):
         for senderItem in self.sender():
             if senderItem["url"].endswith(name):
@@ -75,7 +92,7 @@ class RadioPlayer:
         self.player().set_media_list(mediaList)
         self.player().play()
         
-    def playUrl(self, url):
+    def playUrl(self, url,blocking=False):
         logging.debug("playUrl(url=%s)" % url)
         self.stop()
         mediaList = self._instance.media_list_new()
@@ -88,6 +105,11 @@ class RadioPlayer:
             mediaList.add_media(media)
         self.player().set_media_list(mediaList)
         self.player().play()
+        if blocking:
+            time.sleep(1)
+            duration = self.mediaPlayer().get_length() / 1000
+            logging.debug(f"playUrl(url={url}, duration={duration})")
+            time.sleep(duration)
 
     def playYoutube(self, url):
         logging.debug("playYoutube(url=\"%s\")" % url)
@@ -166,22 +188,25 @@ if __name__ == "__main__":
     stopEvent = threading.Event()
     changeEvent = threading.Event()
     logging.basicConfig(level = logging.DEBUG)
-    radioPlayer = RadioPlayer("radio.json")
-    radioPlayer.play("radio maria")
-    radioPlayer.setVolume(50)
-    media=radioPlayer.media()
-    time.sleep(5)
-    radioPlayer.startMetaParsing(stopEvent, changeEvent)
-    running = True
-    logging.debug("enter main loop")
-    while running:
-        print(".", end="")
-        try:
-            time.sleep(2)
-            if changeEvent.is_set():
-                print("\rsender %s is playing \"%s\"" %(RadioPlayer.CurrSender,RadioPlayer.CurrTitle), end="", flush=True)
-                changeEvent.clear()
-        except KeyboardInterrupt:
-            running = False
-    stopEvent.set()
+    radioPlayer = RadioPlayer("/var/radio/conf/radio.json")
+    nextSender = radioPlayer.getNextSender("hr1")
+    previousSender = radioPlayer.getPreviousSender("hr1")
+    nextSender = radioPlayer.getNextSender(previousSender['name'])
+##    radioPlayer.play("radio maria")
+##    radioPlayer.setVolume(50)
+##    media=radioPlayer.media()
+##    time.sleep(5)
+##    radioPlayer.startMetaParsing(stopEvent, changeEvent)
+##    running = True
+##    logging.debug("enter main loop")
+##    while running:
+##        print(".", end="")
+##        try:
+##            time.sleep(2)
+##            if changeEvent.is_set():
+##                print("\rsender %s is playing \"%s\"" %(RadioPlayer.CurrSender,RadioPlayer.CurrTitle), end="", flush=True)
+##                changeEvent.clear()
+##        except KeyboardInterrupt:
+##            running = False
+##    stopEvent.set()
     radioPlayer.stop()
