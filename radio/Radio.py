@@ -511,10 +511,17 @@ def toggleVolume(up):
     set_Volume(volume)
 
 def sayTime():
+    global active
+    global currentsender
+    if active:
+        radioPlayer.stop()
+        
     (filepath, url) = say.say_time('de')
     radioPlayer.playUrl(url, True)
     logging.debug(f"sayTime(url={url})")
     os.remove(filepath)
+    if active:
+        radioPlayer.play(currentsender['name'])
 
 def nextSender():
     global radioPlayer
@@ -525,9 +532,10 @@ def nextSender():
 
 def previousSender():
     global radioPlayer
+    global currentsender
     previousSender = radioPlayer.getPreviousSender(currentsender["name"])
     radioPlayer.play(previousSender['name'])
-    currentSender = nextSender
+    currentsender = previousSender
 
 if __name__ == "__main__": 
     logging.basicConfig(level = logging.DEBUG)
@@ -632,7 +640,7 @@ if __name__ == "__main__":
                     elif event.IrKey == IrKey.VolumeDown and active:
                         logging.debug(f"IRControl-->VolumeDown: decrease volume")
                         toggleVolume(False)
-                    elif event.IrKey == IrKey.Display and not active:
+                    elif event.IrKey == IrKey.Display:
                         sayTime()
 
             pygame.display.flip()

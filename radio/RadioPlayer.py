@@ -144,12 +144,14 @@ class RadioPlayer:
 
     def setEqualizerByIndex(self, index):
         equalizerInstance = Equalizer.GetInstance()
-        equalizer = equalizerInstance.getEqualizerByIndex(11)
+        equalizer = equalizerInstance.getEqualizerByIndex(index)
+        logging.debug(f"Equalizer.setEqualizerByName(index={index}, equalizer={equalizer})")
         self.mediaPlayer().set_equalizer(equalizer)
 
     def setEqualizerByName(self, name):
         equalizerInstance = Equalizer.GetInstance()
         equalizer = equalizerInstance.getEqualizerByName(name)
+        logging.debug(f"Equalizer.setEqualizerByName(name={name}, equalizer={equalizer})")
         self.mediaPlayer().set_equalizer(equalizer)
         
     @staticmethod
