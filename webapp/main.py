@@ -197,7 +197,7 @@ def doChangeSound():
     if soundIndex != None:
         sound = Sound()
         sound.change(int(soundIndex))
-    return redirect('/radio')
+    return redirect('/radio/sound/edit')
         
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
