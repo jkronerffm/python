@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 from flask import Flask, redirect, request, render_template, flash
 import waketime
 import radio
+import status
 from sound import Sound
 import logging
 from common import dictToObj
@@ -17,7 +18,9 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 @app.route("/")   
 @app.route("/radio")
 def init():
-    return render_template("index.html", title="Radio Einstellungen", header="Radio Einstellungen")
+    st = status.Status()
+    statusData = st.get()
+    return render_template("index.html", title="Radio Einstellungen", header="Radio Einstellungen", status = statusData)
 
 def getLanguageList(acceptLanguages:str):
     result = []

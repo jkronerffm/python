@@ -5,11 +5,13 @@ basepath = Path(os.path.dirname(os.path.realpath(__file__))).parent.absolute()
 sys.path.append(os.path.join(basepath, "have_internet"))
 sys.path.append(os.path.join(basepath, "common"))
 sys.path.append(os.path.join(basepath, "ircontrol"))
+sys.path.append(os.path.join(basepath, "ipc"))
 from os.path import isfile
 import json
 import pygame
 import pigpio
 import dictToObj
+from ipc import StatusServer
 from ircontrol import ircontrol
 from ircontrol import LastPressed
 from pygame.event import Event
@@ -466,11 +468,13 @@ def changeRadio(filepath):
 def changeSound(filepath):
     logging.debug(f"changeSound(filepath={filepath})")
     global radioPlayer
+    global currentequalizer
     soundSettings = dictToObj.objFromJson(filepath)
     if hasattr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'index'):
         radioPlayer.setEqualizerByIndex(soundSettings.equalizer.index)
     elif hasAttr(soundSettings, 'equalizer') and hasattr(soundSettings.equalizer, 'name'):
         radioPlayer.setEqualizerByName(soundSettings.equalizer.name)
+    currentequalizer = soundSettings.equalizer
 
 def waketimeHandler(filepath, modificationTime):
     logging.debug(f"waketimeHandler(filepath={filepath}): reload config file")
@@ -538,7 +542,17 @@ def previousSender():
     radioPlayer.play(previousSender['name'])
     currentsender = previousSender
 
-          
+def statusCallback():
+    global active
+    global currentsender
+    global currentequalizer
+    global volume
+    global radioScheduler
+    logging.debug("statusCallback()")
+    nextRunTime = radioScheduler.nextRunTime()
+    nextRunTimeDisplay = nextRunTime.strftime('%d.%m.%Y %H:%M')
+    return {"running": True, "active": active, "current_sender": currentsender['name'], "volume": volume, "equalizer": currentequalizer.name, "next_runtime": nextRunTimeDisplay}
+
 if __name__ == "__main__":
     try:
         options = Options.Get(sys.argv[0], sys.argv[1:])
@@ -599,7 +613,9 @@ if __name__ == "__main__":
 
     closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 25)
     buttonDown=False
+    changeSound("/var/radio/conf/sound.json")
     MetaBackgroundWorker.Create(radioPlayer, metaCallback)
+    StatusServer.StartThread("radio", statusCallback)
     logging.debug("currentsender=%s" % currentsender)
     while running:
         try:
