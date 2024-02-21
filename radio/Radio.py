@@ -26,6 +26,7 @@ from MetaBackgroundWorker import MetaBackgroundWorker
 from filewatcher import WatchDog
 from enum import Enum
 import say
+from Options import Options, ArgumentError
 
 pygame.init()
 
@@ -537,22 +538,30 @@ def previousSender():
     radioPlayer.play(previousSender['name'])
     currentsender = previousSender
 
-if __name__ == "__main__": 
-    logging.basicConfig(level = logging.DEBUG)
-    info = pygame.display.Info()
+          
+if __name__ == "__main__":
+    try:
+        options = Options.Get(sys.argv[0], sys.argv[1:])
+    except ArgumentError:
+        printUsage(sys.argv[0])
+        sys.exit(-1)
+        
+    logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
+    
     ircontrol.ReadHashes("/var/radio/conf/irsony.json")
     pi = pigpio.pi()
     irc = ircontrol(pi, 17, irCallback, 5)
-    
-    if len(sys.argv) == 2 and sys.argv[1] == "--fullscreen":
+
+    if options.fullscreen():
+        info = pygame.display.Info()
         screenWidth = info.current_w
         screenHeight = info.current_h
-    elif len(sys.argv) > 2:
-        screenWidth = int(sys.argv[1])
-        screenHeight = int(sys.argv[2])
+    elif options.size() != None:
+        screenWidth = int(options.size()[0])
+        screenHeight = int(options.size()[0])
     else:
-        screenWidth = 800
-        screenHeight = 400
+        screenWidth = 1024
+        screenHeight = 768
     volDistX = 300
     volDistY = 10
     spkDistX = 350
