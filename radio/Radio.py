@@ -494,7 +494,7 @@ def soundHandler(filepath, modificationTime):
     logging.debug(f">> post event {event}")
     pygame.event.post(event)
 
-def irCallback(buttonCode):
+def irCallback(buttonCode, buttonState):
     if LastPressed.ButtonCode != buttonCode:
         LastPressed.Initialize(buttonCode)
         buttonkey = ircontrol.GetHashKey(buttonCode)
@@ -521,7 +521,7 @@ def sayTime():
     if active:
         radioPlayer.stop()
         
-    (filepath, url) = say.say_time('de')
+    (filepath, url) = say.say_time('de', fuzzy=False)
     radioPlayer.playUrl(url, True)
     logging.debug(f"sayTime(url={url})")
     os.remove(filepath)
@@ -562,7 +562,7 @@ if __name__ == "__main__":
         
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
     
-    ircontrol.ReadHashes("/var/radio/conf/irsony.json")
+    ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     pi = pigpio.pi()
     irc = ircontrol(pi, 17, irCallback, 5)
 
