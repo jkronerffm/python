@@ -80,7 +80,6 @@ class RadioPlayer:
             if "youtube" in url:
                 url = getYoutubeStreamUrl(url)
             self.playUrl(url)
-        self.initEqualizer()
 
     def playRandomized(self,url):
         songs = shufflePlayList(url)

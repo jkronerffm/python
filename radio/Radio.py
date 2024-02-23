@@ -12,7 +12,7 @@ import pygame
 import pigpio
 import dictToObj
 from ipc import StatusServer
-from ircontrol import ircontrol
+from ircontrol import ircontrol, ButtonState
 from ircontrol import LastPressed
 from pygame.event import Event
 import math
@@ -41,6 +41,10 @@ class SettingsType(Enum):
     Waketime = 1
     Radio = 2
     Sound = 3
+
+class IrState(Enum):
+    ButtonDown = 1
+    ButtonPressed = 2
 
 class IrKey:
     Power = 1
@@ -494,16 +498,33 @@ def soundHandler(filepath, modificationTime):
     logging.debug(f">> post event {event}")
     pygame.event.post(event)
 
+def buttonDown(buttonCode):
+    buttonKey = ircontrol.GetHashKey(buttonCode)
+    eventKey = IrKey.FromButtonKey(buttonKey)
+    event = pygame.event.Event(IrEvent, {'IrState': IrState.ButtonDown, 'IrKey': eventKey})
+    logging.debug(f"buttonDown(event={event})")
+    pygame.event.post(event)
+    
+def buttonPressed(buttonCode):
+    buttonKey = ircontrol.GetHashKey(buttonCode)
+    eventKey = IrKey.FromButtonKey(buttonKey)
+    event = pygame.event.Event(IrEvent, {'IrState': IrState.ButtonPressed, 'IrKey': eventKey})
+    logging.debug(f"buttonPressed(event={event})")
+    pygame.event.post(event)
+    
 def irCallback(buttonCode, buttonState):
-    if LastPressed.ButtonCode != buttonCode:
-        LastPressed.Initialize(buttonCode)
-        buttonkey = ircontrol.GetHashKey(buttonCode)
-        eventKey = IrKey.FromButtonKey(buttonkey)
-        event = pygame.event.Event(IrEvent, {'IrKey': eventKey})
-        logging.debug(f"irCallback(event={event})")
-        pygame.event.post(event)
-    elif LastPressed.HasElapsed():
-        LastPressed.Release()
+    if buttonState != None:
+        buttonState.setButtonDown(buttonCode)
+        
+##    if LastPressed.ButtonCode != buttonCode:
+##        LastPressed.Initialize(buttonCode)
+##        buttonkey = ircontrol.GetHashKey(buttonCode)
+##        eventKey = IrKey.FromButtonKey(buttonkey)
+##        event = pygame.event.Event(IrEvent, {'IrKey': eventKey})
+##        logging.debug(f"irCallback(event={event})")
+##        pygame.event.post(event)
+##    elif LastPressed.HasElapsed():
+##        LastPressed.Release()
 
 def toggleVolume(up):
     global volume
@@ -515,16 +536,29 @@ def toggleVolume(up):
             volume -= 2
     set_Volume(volume)
 
+def sayMessage(Message.Key: message):
+    global active
+    global radioPlayer
+    
+    message = Message[message]
+    radioPlayer.playUrl(message, True)
+    if active:
+        radioPlayer.play(currentsender["name"]
+    
 def sayTime():
     global active
     global currentsender
     if active:
         radioPlayer.stop()
+
+    if haveInternet():
+        (filepath, url) = say.say_time('de', fuzzy=False)
+        radioPlayer.playUrl(url, True)
+        logging.debug(f"sayTime(url={url})")
+        os.remove(filepath)
+    else:
+        sayMessage(say.Message.Key.NoInternet)
         
-    (filepath, url) = say.say_time('de', fuzzy=False)
-    radioPlayer.playUrl(url, True)
-    logging.debug(f"sayTime(url={url})")
-    os.remove(filepath)
     if active:
         radioPlayer.play(currentsender['name'])
 
@@ -564,8 +598,8 @@ if __name__ == "__main__":
     
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     pi = pigpio.pi()
-    irc = ircontrol(pi, 17, irCallback, 5)
-
+    buttonState = ButtonState.Start(buttonDown, buttonPressed)
+    irc = ircontrol(pi, 17, irCallback, buttonState = buttonState, timeout=5)
     if options.fullscreen():
         info = pygame.display.Info()
         screenWidth = info.current_w
@@ -649,25 +683,27 @@ if __name__ == "__main__":
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
-                    if event.IrKey == IrKey.Pause:
-                        activate()
-                    elif event.IrKey == IrKey.Down:
-                        logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
-                    elif event.IrKey == IrKey.Left and active:
-                        logging.debug(f"IRControl-->Left: switch to previous radio sender")
-                        previousSender()
-                    elif event.IrKey == IrKey.Right and active:
-                        logging.debug(f"IRControl-->Right: switch to next radio sender")
-                        nextSender()
-                    elif event.IrKey == IrKey.VolumeUp and active:
-                        logging.debug(f"IRControl-->VolumeUp: increase volume")
-                        toggleVolume(True)
-                    elif event.IrKey == IrKey.VolumeDown and active:
-                        logging.debug(f"IRControl-->VolumeDown: decrease volume")
-                        toggleVolume(False)
-                    elif event.IrKey == IrKey.Display:
-                        sayTime()
-
+                    if event.IrState == IrState.ButtonPressed:
+                        if event.IrKey == IrKey.Pause:
+                            activate()
+                        elif event.IrKey == IrKey.Down:
+                            logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
+                        elif event.IrKey == IrKey.Left and active:
+                            logging.debug(f"IRControl-->Left: switch to previous radio sender")
+                            previousSender()
+                        elif event.IrKey == IrKey.Right and active:
+                            logging.debug(f"IRControl-->Right: switch to next radio sender")
+                            nextSender()
+                        elif event.IrKey == IrKey.Display:
+                            sayTime()
+                    elif event.IrState == IrState.ButtonDown:
+                        if event.IrKey == IrKey.VolumeUp and active:
+                            logging.debug(f"IRControl-->VolumeUp: increase volume")
+                            toggleVolume(True)
+                        elif event.IrKey == IrKey.VolumeDown and active:
+                            logging.debug(f"IRControl-->VolumeDown: decrease volume")
+                            toggleVolume(False)
+                        
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:

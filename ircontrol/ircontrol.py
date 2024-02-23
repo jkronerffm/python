@@ -141,7 +141,7 @@ class ButtonState:
                 self.setButtonPressed(buttonDown)
                 self._fireButtonDown()
             self.setButtonDown(None)
-            time.sleep(0.5)
+            time.sleep(0.2)
             if self.buttonDown() != self.buttonPressed():
                 self._fireButtonPressed()
             
