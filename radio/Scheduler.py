@@ -10,6 +10,7 @@ from normalizeKeys import normalizeKeys
 import json
 from tzlocal import get_localzone
 import copy
+import logging
 
 class RunTime:
     def __init__(self, parent = None):
@@ -126,7 +127,6 @@ class RadioJob:
         self._runtime = self.createRunTime(job['runtime'])
         self._sender = job['sender'] if 'sender' in job else None
         self._timeannouncement = job['timeannouncement'] if 'timeannouncement' in job else False
-        print("__init_constructor__(sender=%s)" % (self.sender()))
         logging.debug("%s.__init_constructor__(runtime=%s)" % (self.__class__.__name__, str(self._runtime)))
         if "duration" in job:
             self._duration = eval(job['duration'])
@@ -140,7 +140,6 @@ class RadioJob:
         self._runtime = copy.deepcopy(job.runtime())
         self._sender = copy.deepcopy(job.sender())
         self._timeannouncement = copy.deepcopy(job.timeannouncment())
-        print("__copy_constructor(sender =", self.sender(),")")
         self._duration = copy.deepcopy(job.duration())
         
     def as_dict(self):
@@ -317,7 +316,7 @@ class RadioScheduler:
             logging.debug(f"{self.__class__.__name__}.jobCallback(): call jobHandler")
             self._jobHandler(radioJob)
         elif radioJob.isStopJob() and self.activeJob() == radioJob.id():
-                print("%s.jobCallback(): call jobHandler to stop radio for job(%s)" % (self.__class__.__name__, str(radioJob)))
+                logging.debug("%s.jobCallback(): call jobHandler to stop radio for job(%s)" % (self.__class__.__name__, str(radioJob)))
                 self._jobHandler(radioJob)
         elif radioJob.isContinueJob():
             self._jobHandler(radioJob)
