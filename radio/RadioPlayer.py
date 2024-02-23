@@ -19,6 +19,9 @@ class RadioPlayer:
 
     def background(self):
         return self._senderData['background']
+
+    def icon(self):
+        return self._senderData['icon']
     
     def readConfigFile(self, configFile):
         with open(configFile) as jsonFile:

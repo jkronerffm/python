@@ -593,7 +593,7 @@ if __name__ == "__main__":
     except ArgumentError:
         printUsage(sys.argv[0])
         sys.exit(-1)
-        
+
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
     
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
@@ -641,6 +641,10 @@ if __name__ == "__main__":
     active = False
     clock = pygame.time.Clock()
     backgroundfile = radioPlayer.background()
+    iconFile = radioPlayer.icon()
+    icon = pygame.image.load(iconFile)
+    pygame.display.set_icon(icon)
+    
     image = pygame.image.load(backgroundfile)
     image = pygame.transform.scale(image, [screenWidth, screenHeight])
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
