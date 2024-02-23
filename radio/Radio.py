@@ -536,14 +536,14 @@ def toggleVolume(up):
             volume -= 2
     set_Volume(volume)
 
-def sayMessage(Message.Key: message):
+def sayMessage(message:say.Message.Key):
     global active
     global radioPlayer
     
-    message = Message[message]
+    message = say.Message[message]
     radioPlayer.playUrl(message, True)
     if active:
-        radioPlayer.play(currentsender["name"]
+        radioPlayer.play(currentsender["name"])
     
 def sayTime():
     global active
