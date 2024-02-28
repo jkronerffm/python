@@ -445,9 +445,11 @@ def pauseRadio():
     if not active:
         return
 
-    radioPlayer.stop()
     contJob = radioScheduler.createContinueJob(currentsender["name"])
+    if contJob == None:
+        return
     logging.debug(f"pauseRadio(contJob={contJob})")
+    radioPlayer.stop()
     active = False
     
 
