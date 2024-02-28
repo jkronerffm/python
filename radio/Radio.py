@@ -47,6 +47,7 @@ class IrState(Enum):
     ButtonPressed = 2
 
 class IrKey:
+    Unused = 0
     Power = 1
     Pause = 2
     VolumeUp = 3
@@ -60,15 +61,16 @@ class IrKey:
     @staticmethod
     def FromButtonKey(buttonKey):
         KeyMapping = {
-            'power': IrKey.Power,
-            'ok': IrKey.Pause,
+            'power': IrKey.Unused,
+            'ok': IrKey.Power,
             'vol+': IrKey.VolumeUp,
             'vol-': IrKey.VolumeDown,
             'up': IrKey.Up,
             'down': IrKey.Down,
             'left': IrKey.Left,
             'right': IrKey.Right,
-            'display': IrKey.Display
+            'display': IrKey.Display,
+            'pause': IrKey.Pause
         }
         result = 0
         if buttonKey in KeyMapping:
@@ -409,9 +411,9 @@ def startHandler(job):
     global radioPlayer
     global currentsender
     global active
-    logging.debug("startHandler" + str(job))
     sendername = getSendernameFromJob(job) if haveInternet() else "my music"
-
+    activeJob = job.id()
+    logging.debug(f"startHandler(job={str(job)}, activeJob={activeJob})")
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
         (filepath, url) = say.say_time_with_greeting('de')
         radioPlayer.playUrl(url,True)
@@ -420,9 +422,11 @@ def startHandler(job):
     radioPlayer.play(sendername)
     active = True
 
-def getSendernameFromJob(job):
-    global currentSender
-    return job.sender() if job.sender() != None else currentsender["name"]
+def stopHandler(job):
+    global radioPlayer
+    global active
+    radioPlayer.stop()
+    active = False
 
 def contHandler(job):
     global radioPlayer
@@ -433,12 +437,24 @@ def contHandler(job):
     radioPlayer.play(sendername)
     active=True
     
-def stopHandler(job):
+def pauseRadio():
     global radioPlayer
+    global radioScheduler
+    global currentSender
     global active
+    if not active:
+        return
+
     radioPlayer.stop()
+    contJob = radioScheduler.createContinueJob(currentsender["name"])
+    logging.debug(f"pauseRadio(contJob={contJob})")
     active = False
     
+
+def getSendernameFromJob(job):
+    global currentSender
+    return job.sender() if job.sender() != None else currentsender["name"]
+
 def onAddJob(name, job):
     global radioScheduler
     logging.debug("onAddJob(name=%s, job=%s)" % (name, str(job)))
@@ -516,16 +532,6 @@ def irCallback(buttonCode, buttonState):
     if buttonState != None:
         buttonState.setButtonDown(buttonCode)
         
-##    if LastPressed.ButtonCode != buttonCode:
-##        LastPressed.Initialize(buttonCode)
-##        buttonkey = ircontrol.GetHashKey(buttonCode)
-##        eventKey = IrKey.FromButtonKey(buttonkey)
-##        event = pygame.event.Event(IrEvent, {'IrKey': eventKey})
-##        logging.debug(f"irCallback(event={event})")
-##        pygame.event.post(event)
-##    elif LastPressed.HasElapsed():
-##        LastPressed.Release()
-
 def toggleVolume(up):
     global volume
     if up:
@@ -614,7 +620,7 @@ if __name__ == "__main__":
     volDistY = 10
     spkDistX = 350
     spkDistY = 50
-
+    activeJob = None
     screenBorder = 10
     volume = 0
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
@@ -644,7 +650,7 @@ if __name__ == "__main__":
     iconFile = radioPlayer.icon()
     icon = pygame.image.load(iconFile)
     pygame.display.set_icon(icon)
-    
+    pygame.display.set_caption("Radio")
     image = pygame.image.load(backgroundfile)
     image = pygame.transform.scale(image, [screenWidth, screenHeight])
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
@@ -688,8 +694,11 @@ if __name__ == "__main__":
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
                     if event.IrState == IrState.ButtonPressed:
-                        if event.IrKey == IrKey.Pause:
+                        if event.IrKey == IrKey.Power:
                             activate()
+                        if event.IrKey == IrKey.Pause and active:
+                            logging.debug(f"IRControl-->Pause: make a pause")
+                            pauseRadio()
                         elif event.IrKey == IrKey.Down:
                             logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
                         elif event.IrKey == IrKey.Left and active:

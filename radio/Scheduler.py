@@ -318,6 +318,7 @@ class RadioScheduler:
         elif radioJob.isStopJob() and self.activeJob() == radioJob.id():
                 logging.debug("%s.jobCallback(): call jobHandler to stop radio for job(%s)" % (self.__class__.__name__, str(radioJob)))
                 self._jobHandler(radioJob)
+                self.deleteActiveJob()
         elif radioJob.isContinueJob():
             self._jobHandler(radioJob)
         else:
@@ -344,7 +345,7 @@ class RadioScheduler:
         contJob.set_name(f"cont_{self.activeJob()}")
         contJob.set_type("date")
         contJob.set_active(True)
-        contTime = getTimeShift(10)
+        contTime = self.getTimeShift(10)
         date = str(contTime.date())
         time = str(contTime.time())
         contJob.set_runtime(DateRunTime(contJob, {'date': date, 'time': time }))
@@ -352,12 +353,16 @@ class RadioScheduler:
         contJob.set_duration(0)
         logging.debug(f"{self.__class__.__name__}.createContinueJob(job={contJob})")
         contJob.createJob(self._baseScheduler)
+        return contJob
         
     def activeJob(self):
         return self.currentJobId()
 
     def setActiveJob(self, value):
         self.setCurrentJobId(value)
+
+    def deleteActiveJob(self):
+        self.setCurrentJobId(None)
         
     def currentJobId(self):
         return self._currentJobId
