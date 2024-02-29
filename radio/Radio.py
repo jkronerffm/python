@@ -29,6 +29,7 @@ from filewatcher import WatchDog
 from enum import Enum
 import say
 from Options import Options, ArgumentError
+from common.Daemon import Daemon
 
 pygame.init()
 
@@ -603,8 +604,11 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
-    
+    logging.debug("start radio")
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
+    daemon = Daemon("pigpio")
+    daemon.start()
+##    time.sleep(1)
     pi = pigpio.pi()
     buttonState = ButtonState.Start(buttonDown, buttonPressed)
     irc = ircontrol(pi, 17, irCallback, buttonState = buttonState, timeout=5)
@@ -730,4 +734,5 @@ if __name__ == "__main__":
     radioPlayer.stop()
     radioScheduler.shutdown()
     pi.stop()
+    daemon.kill()
     sys.exit()

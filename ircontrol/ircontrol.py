@@ -7,6 +7,7 @@ import time
 import json
 import logging
 import threading
+from common.Daemon import Daemon
 
 class ircontrol:
     def __init__(self, pi, gpio, callback, buttonState = None, timeout=5):
@@ -191,16 +192,15 @@ def callback(buttonKey, buttonState):
     logging.debug(f"callback(buttonKey={buttonKey})")
     if buttonState != None:
         buttonState.setButtonDown(buttonKey)
-##    if LastPressed.ButtonCode != buttonKey:
-##        LastPressed.Initialize(buttonKey)
-##        hashKey = ircontrol.GetHashKey(buttonKey)
-##        print("%x" % buttonKey, hashKey)
-##    elif LastPressed.HasElapsed():
-##        LastPressed.Release()
-        
 
 if __name__ == "__main__":
     logging.basicConfig(level = logging.DEBUG)
+
+    daemon = Daemon("pigpio")
+    pid = daemon.start()
+    logging.debug(f"daemon pigpiod has started: {daemon.hasStarted()}")
+    logging.debug(f"daemon pigpio started with pid {pid}")
+
     rcname = input("Please enter the name of your remote control: ")
     ircontrol.ReadHashes(f"/var/radio/remotecontrol/{rcname}.json")
     pi = pigpio.pi()
@@ -213,6 +213,9 @@ if __name__ == "__main__":
             time.sleep(1)
         except KeyboardInterrupt:
             break
+    logging.debug("stop pigpio")
     pi.stop()
     print(ircontrol.Hashes)
+    logging.debug(f"stop daemon")
+    daemon.kill()
 
