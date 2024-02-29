@@ -6,6 +6,8 @@ from playYoutube import getYoutubeStreamUrl
 from fileListRandomizer import shufflePlayList
 from Equalizer import Equalizer
 import threading
+import ctypes
+from ctypes import *
 
 class RadioPlayer:
     CurrSender = ""
@@ -220,6 +222,32 @@ class RadioPlayer:
         RadioPlayer.CurrTitle = title
         changeEvent.set()
 
+@vlc.CallbackDecorators.VideoLockCb
+def _lockcb(opaque, planes):
+    print("lock")
+    return ctypes.create_string_buffer('\000')
+
+@vlc.CallbackDecorators.VideoUnlockCb
+def _unlockcb(opoaque, pic, planes):
+    print("unlock")
+    return ctypes.create_string_buffer('\000')
+
+@vlc.CallbackDecorators.VideoDisplayCb
+def _displaycb(opaque, picture):
+    print("display")
+    return ctypes.create_string_buffer('\000')
+
+@vlc.CallbackDecorators.AudioPlayCb
+def playcb(opaque, samples, count, pts):
+    print(f"playcb(opaque={opaque},samples={samples},count={count}, pts={pts})")
+    return ctypes.create_string_buffer(b'\000')
+
+def titleChanged(event):
+    print(event)
+    
+a= ctypes.create_string_buffer(b'\000' * 2048)
+
+
 if __name__ == "__main__":
     stopEvent = threading.Event()
     changeEvent = threading.Event()
@@ -228,6 +256,27 @@ if __name__ == "__main__":
     nextSender = radioPlayer.getNextSender("hr1")
     previousSender = radioPlayer.getPreviousSender("hr1")
     nextSender = radioPlayer.getNextSender(previousSender['name'])
+    events = radioPlayer.player().event_manager()
+    events.event_attach(vlc.EventType.MediaPlayerTitleChanged, titleChanged)
+    devices = radioPlayer.mediaPlayer().audio_output_device_enum()
+    if devices:
+        devs = []
+        device = devices
+        print(dir(device.contents))
+        while device:
+            print(device.contents.description)
+            device = device.contents.next
+    print("=" * 80)
+    print(dir(radioPlayer.mediaPlayer()))
+##    radioPlayer.mediaPlayer().video_set_callbacks(_lockcb, _unlockcb, _displaycb, a)
+##    radioPlayer.mediaPlayer().audio_set_callbacks(play=playcb, pause=None, resume=None, flush=None, drain=None, opaque=None)
+    radioPlayer.play(nextSender['name'])
+    while True:
+        try:
+             time.sleep(1)
+        except KeyboardInterrupt:
+            break;
+        
 ##    radioPlayer.play("radio maria")
 ##    radioPlayer.setVolume(50)
 ##    media=radioPlayer.media()

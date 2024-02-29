@@ -41,6 +41,27 @@ class Equalizer:
         else:
             raise IndexError()
 
+    def getAmpAtBand(self, equalizer, bandIndex):
+        if bandIndex < 0 or bandIndex >= self.getBandCount():
+            raise IndexError()
+        
+        ampValue = vlc.libvlc_audio_equalizer_get_amp_at_index(equalizer,bandIndex)
+        return ampValue
+
+    def getAmpValues(self, equalizer):
+        frequencies = self.getFrequencies()
+        band = 0
+        result = []
+        for frequency in frequencies:
+            resultElement = {
+                'band': band,
+                'frequency': frequency,
+                'amp': self.getAmpAtBand(equalizer, band)
+            }
+            band+=1
+            result.append(resultElement)
+        return result
+                
     def hasFrequency(self,frequency):
         frequencies = self.getFrequencies()
         return frequency in frequencies
@@ -91,6 +112,9 @@ class Equalizer:
         return presetName in presets
 
 if __name__ == "__main__":
+    import matplotlib
+    import matplotlib.pyplot as plt
+
     instance =vlc.Instance()
     player = instance.media_list_player_new()
     mediaPlayer = player.get_media_player()
@@ -105,7 +129,7 @@ if __name__ == "__main__":
     print("Bands...")
     frequencies = equalizerInstance.getFrequencies()
     for frq in frequencies:
-        print(f"  Band {equalizerInstance.getFrequencyBand(frq)} -> {str(frq)}.1Hz")
+        print("  Band %d -> %.1dHz" % (equalizerInstance.getFrequencyBand(frq), frq))
 
     print("Presets...")
     presets = equalizerInstance.getPresets()
@@ -118,6 +142,12 @@ if __name__ == "__main__":
         equalizer = equalizerInstance.getEqualizerByIndex(preset)
         print(f"  try equalizer preset {name}")
         mediaPlayer.set_equalizer(equalizer)
+        ampValues = equalizerInstance.getAmpValues(equalizer)
+        bands = [ f"{v['frequency']}Hz" for v in ampValues ]
+        amps = [ v['amp'] for v in ampValues ]
+        fig, ax = plt.subplots()
+        ax.bar(bands, amps)
+        plt.show()
         preset+= 1
         if preset >= equalizerInstance.getPresetCount():
             preset = 0
