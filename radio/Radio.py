@@ -585,6 +585,14 @@ def previousSender():
     radioPlayer.play(previousSender['name'])
     currentsender = previousSender
 
+def nextEqualizer():
+    global radioPlayer
+    radioPlayer.nextEqualizer()
+
+def previousEqualizer():
+    global radioPlayer
+    radioPlayer.previousEqualizer()
+
 def statusCallback():
     global active
     global currentsender
@@ -706,7 +714,11 @@ if __name__ == "__main__":
                             logging.debug(f"IRControl-->Pause: make a pause")
                             pauseRadio()
                         elif event.IrKey == IrKey.Down:
-                            logging.debug(f"IRControl-->Down: do a pause if active after wakeup")
+                            logging.debug(f"switch Equalizer to next preset")
+                            nextEqualizer()
+                        elif event.IrKey == IrKey.Up:
+                            logging.debug(f"switch Equalizer to previous preset")
+                            previousEqualizer()
                         elif event.IrKey == IrKey.Left and active:
                             logging.debug(f"IRControl-->Left: switch to previous radio sender")
                             previousSender()

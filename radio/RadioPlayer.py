@@ -16,6 +16,10 @@ class RadioPlayer:
         self.readConfigFile(configFile)
         self._instance = vlc.Instance()
         self._player = self._instance.media_list_player_new()
+        self._equalizerIndex = -1
+
+    def equalizerIndex(self):
+        return self._equalizerIndex
 
     def background(self):
         return self._senderData['background']
@@ -141,6 +145,32 @@ class RadioPlayer:
     def getVolume(self):
         return self.mediaPlayer().audio_get_volume()
 
+    def incrementEqualizer(self):
+        equalizerInstance = Equalizer.GetInstance()
+        if self.equalizerIndex() < equalizerInstance.getPresetCount():
+            self._equalizerIndex += 1
+        else:
+            self._equalizerIndex = 0
+        
+    def decrementEqualizer(self):
+        equalizerInstance = Equalizer.GetInstance()
+        if self.equalizerIndex() > 0:
+            self._equalizerIndex -= 1
+        else:
+            self._equalizerIndex = equalizerInstance.getPresetCount() - 1
+            
+    def nextEqualizer(self):
+        equalizerInstance = Equalizer.GetInstance()
+        self.incrementEqualizer()
+        equalizer = equalizerInstance.getEqualizerByIndex(self.equalizerIndex())
+        self.mediaPlayer().set_equalizer(equalizer)
+
+    def previousEqualizer(self):
+        equalizerInstance = Equalizer.GetInstance()
+        self.decrementEqualizer()
+        equalizer = equalizerInstance.getEqualizerByIndex(self.equalizerIndex())
+        self.mediaPlayer().set_equalizer(equalizer)
+    
     def initEqualizer(self):
         self.setEqualizerByIndex(11)
 
@@ -149,12 +179,14 @@ class RadioPlayer:
         equalizer = equalizerInstance.getEqualizerByIndex(index)
         logging.debug(f"Equalizer.setEqualizerByName(index={index}, equalizer={equalizer})")
         self.mediaPlayer().set_equalizer(equalizer)
+        self._equalizerIndex = index
 
     def setEqualizerByName(self, name):
         equalizerInstance = Equalizer.GetInstance()
         equalizer = equalizerInstance.getEqualizerByName(name)
         logging.debug(f"Equalizer.setEqualizerByName(name={name}, equalizer={equalizer})")
         self.mediaPlayer().set_equalizer(equalizer)
+        self._equalizerIndex = equalizer.getPresetIndex(name)
         
     @staticmethod
     def GetMetaThread(radioPlayer, stopEvent, changeEvent):
