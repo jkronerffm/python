@@ -145,9 +145,6 @@ if __name__ == "__main__":
         ampValues = equalizerInstance.getAmpValues(equalizer)
         bands = [ f"{v['frequency']}Hz" for v in ampValues ]
         amps = [ v['amp'] for v in ampValues ]
-        fig, ax = plt.subplots()
-        ax.bar(bands, amps)
-        plt.show()
         preset+= 1
         if preset >= equalizerInstance.getPresetCount():
             preset = 0
