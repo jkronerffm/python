@@ -2,6 +2,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.getcwd()))
 from common import dictToObj
+import logging
+import pathlib
 
 Data = None
 Filepath = "/var/radio/conf/radio.json"
@@ -11,7 +13,7 @@ def createSender(senderId, name, url, image):
         'id': senderId,
         'name': name,
         'url': url,
-        'image': image
+        'image': pathlib.Path(image).as_uri()
     }
     data = getData()
     data.sender.append(dictToObj.obj(senderDict))
@@ -43,14 +45,16 @@ def writeData():
         f.write(jsonStr)
         f.close()
     
-def saveSender(senderId, name, url, image):
+def saveSender(senderId, name, url, imagefilepath):
     sender = getSender(senderId)
+    logging.debug(f"saveSender(senderId={senderId}, sender={sender})")
     if sender != None:
         sender.name = name
         sender.url = url
-        sender.image = image
+        imageurl = pathlib.Path(imagefilepath).as_uri() if imagefilepath != None and imagefilepath != "" else ""
+        sender.image = imageurl
+        logging.debug(f"saveSender(imagefilepath={imagefilepath}, imageurl={imageurl})")
     else:
-        createSender(senderId, name, url, image)
-
+       createSender(senderId, name, url, imagefilepath)
     writeData()
     

@@ -39,3 +39,19 @@ function showFlash(message) {
     popup.classList.toggle("show");
     popup.innerText=message;
 }
+
+function uploadFiles(fileList, dest) {
+  var boundary = Math.random().toString().substr(2);
+  var xmlHttpRequest = new XMLHttpRequest();
+  xmlHttpRequest.open("POST", "/radio/" + dest, true);
+  var dashes = "--";
+  var crlf = "\r\n";
+  filetype = fileList[0].type
+  
+  var postDataStart = dashes + boundary + crlf + "Content-Disposition: form-data;" + "name=\"file\";" + encodeURIComponent(fileList[0].name) + "\"" + crlf + "Content-Type: " + filetype + crlf + crlf;
+  var postDataEnd = crlf + dashes + boundary + dashes;
+  
+  xmlHttpRequest.setRequestHeader("Content-Type", "multipart/related;type=application/dicom;boundary=" + boundary + ";");
+  xmlHttpRequest.setRequestHeader("Accept", "application/dicom+json");
+  xmlHttpRequest.send(new Blob([new Blob([postDataStart]), fileList[0], new Blob([postDataEnd])]));
+}

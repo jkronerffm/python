@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<form action="/radio/sender/save" method="get" enctype="multipart/form-data">
+<form action="/radio/sender/save" method="post" enctype="multipart/form-data">
   <input type="hidden", name="id", id="id", value="{{ senderId }}"/>
   <table>
     <tr>

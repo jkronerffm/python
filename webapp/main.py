@@ -54,17 +54,20 @@ def loadImageToBase64(url):
     if url == '':
         return None
     filepath = makePathnameFromUrl(url)
-    ext = os.path.splitext(filepath)[1][1:]
-    with open(filepath, "rb") as image_file:
-        data = image_file.read()
-        encoded_string = base64.b64encode(data).decode("utf-8")
-        image_file.close()
-        if ext == "svg":
-            image_type = "svg+xml"
-        else:
-            image_type = ext
-    image = f"data:image/{image_type};base64,{encoded_string}"
-    return image
+    if os.path.exists(filepath):
+        ext = os.path.splitext(filepath)[1][1:]
+        with open(filepath, "rb") as image_file:
+            data = image_file.read()
+            encoded_string = base64.b64encode(data).decode("utf-8")
+            image_file.close()
+            if ext == "svg":
+                image_type = "svg+xml"
+            else:
+                image_type = ext
+        image = f"data:image/{image_type};base64,{encoded_string}"
+        return image
+    else:
+        return None
 
 @app.route("/radio/sender/")
 def doListRadioSender():
@@ -101,19 +104,44 @@ def doDeleteSender():
     radio.deleteSender(senderId)
     return redirect("/radio/sender")
 
-@app.route("/radio/sender/save")
-def doSaveSender():
-    for key in request.args.keys():
-        logging.debug(f"doSaveSender(key={key}, value={request.args.get(key)})")
-    senderId = request.args.get('id')
-    name = request.args.get('name')
-    url = request.args.get('url')
-    image = request.args.get('imageFile')
-    logging.debug("doSaveSender: try to access request.files")
-    radio.saveSender(senderId, name, url, image)
-    flash("Der Sender wurde erfolgreich gespeichert")
-    return redirect("/radio/sender")
+basepath = "/var/radio/"
+picspath = os.path.join(basepath, "pics")
+musicpath = os.path.join(basepath, "music")
 
+def saveUploadFile(file, dest):
+    if file != None and file.filename != "":
+        filepath = os.path.join(dest, file.filename)
+        file.save(filepath)
+        return filepath
+    else:
+        return None
+    
+def saveUploadList(fileList, dest):
+    savedFiles=[]
+    for file in fileList:
+        filepath = saveUploadFile(file, dest)
+        savedFiles.append(filepath)
+    return savedFiles
+    
+@app.route("/radio/sender/save", methods=["GET", "POST"])
+def doSaveSender():
+    logging.debug(f"doSaveSavender()")
+    if request.method == "POST":
+        logging.debug(f">> post")
+        for key in request.form.keys():
+            logging.debug(f">>>>key={key}, value={request.form.get(key)}")
+        senderId = request.form.get('id')
+        name = request.form.get('name')
+        url = request.form.get('url')
+        if 'imageFile' in request.files:
+            filepath = saveUploadFile(request.files['imageFile'], picspath)
+        else:
+            filepath = request.form.get('imagefilepath')
+        radio.saveSender(senderId, name, url, filepath)
+        flash("Der Sender wurde erfolgreich gespeichert")
+        return redirect("/radio/sender")
+    return '';
+    
 @app.route("/radio/waketime/")
 def doWaketime():
     return redirect("/radio/waketime/grid")
