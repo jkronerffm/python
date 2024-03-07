@@ -55,3 +55,56 @@ function uploadFiles(fileList, dest) {
   xmlHttpRequest.setRequestHeader("Accept", "application/dicom+json");
   xmlHttpRequest.send(new Blob([new Blob([postDataStart]), fileList[0], new Blob([postDataEnd])]));
 }
+
+function repaintBackgroundList(fileList) {
+  console.log(fileList);
+  var backgroundList = document.getElementById("selBackground")
+  backgroundList.options.length = 0;
+  for(var file in fileList) {
+    filename = fileList[file];
+    console.log("add " + filename + " to select")
+    var opt = document.createElement("option");
+    opt.text = filename;
+    opt.value = filename;
+    backgroundList.add(opt, null)
+  }
+  backgroundList.addEventListener("change", changeBgPic);
+}
+function saveBackgroundFile() {
+  var imageFile = document.getElementById("imageFile");
+  var fileList = imageFile.files;
+  const formData = new FormData();
+  formData.append("file", fileList[0]);
+  const requestOptions = {
+    headers: {
+      "Content-Type": fileList[0].contentType,
+    },
+    mode: "no-cors",
+    method: "POST",
+    files: fileList,
+    body: formData,
+  };
+  fetch("/radio/background/save", requestOptions)
+  .then(r => r.json().then(data => ({status: r.status, body: data})))
+  .then(obj => repaintBackgroundList(obj.body.background));
+
+  return false;
+}
+
+function setImage(imageData) {
+  var img = document.getElementById("backgroundImage");
+  img.src = imageData;
+}
+
+function changeBgPic(callback) {
+  var selBackground = document.getElementById("selBackground");
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", "/radio/background/get?image=" + selBackground.value, true);
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === 4) {
+      callback(JSON.parse(xhr.response).b64Image);
+    }
+  };
+  xhr.send();
+  backgroundList.addEventListener("change", changeBgPic);
+}

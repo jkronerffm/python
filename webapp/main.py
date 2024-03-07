@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.getcwd()))
-from flask import Flask, redirect, request, render_template, flash
+from flask import Flask, redirect, request, render_template, flash,jsonify
 import waketime
 import radio
 import status
@@ -229,8 +229,33 @@ def doChangeSound():
         sound = Sound()
         sound.change(int(soundIndex))
     return redirect('/radio/sound/edit')
+    
+@app.route("/radio/misc")
+def doMisc():
+    imageList = [filename for filename in os.listdir('/var/radio/background') if filename.endswith(('.jpg', '.jpeg', '.png', '.svg'))]
+    imageData = loadImageToBase64("file:///var/radio/background/background.jpg")
+    return render_template('misc.html', header='Sonstiges', imageList=imageList, selectedImage="background.jpg", imageData=imageData)
         
+@app.route("/radio/background/get")
+def getBackgroundImages():
+    filename = request.args.get('image', None)
+    if filename != None:
+        logging.debug(f"getBackgroundImage(filename={filename})")
+        imageData = loadImageToBase64(f"file:///var/radio/background/{filename}")
+    return jsonify(b64Image = imageData);
+    
+@app.route("/radio/background/save", methods=["GET","POST"])
+def saveBackgroundImage():
+    logging.debug(f"getBackgroundImage(request={request})")
+    if request.method == "POST":
+        logging.debug(f" >> files={request.files}")
+        if "file" in request.files:
+            file = request.files['file']
+            logging.debug(f" >> filename = {file.filename}")
+            saveUploadFile(file, "/var/radio/background")
+    backgroundImages = [filename for filename in os.listdir('/var/radio/background') if filename.endswith(('.jpg', '.jpeg', '.png', '.svg'))]
+    return jsonify(background= backgroundImages)
+    
 if __name__ == "main":
     logging.basicConfig(level="DEBUG")
-    
     

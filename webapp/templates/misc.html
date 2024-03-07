@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="GET" action="/misc/save">
+  <table>
+    <tr>
+      <td>Hintergrund:</td>
+      <td>
+        <select id="selBackground" name="selBackground" onchange="changeBgPic(setImage);">
+          {% for image in imageList %}
+            <option value="{{ image }}"
+              {% if image == selectedImage %}
+                selected
+              {% endif %}
+            >{{ image }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>
+        <input type="button" id="addPic" name="addPic" value="..." onclick="document.getElementById('imageFile').click()">
+        <input type="file" style="display:none;" id="imageFile" onchange="saveBackgroundFile()" accept=".jpg, .jpeg, .png, .svg">
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <img src="{{ imageData }}" alt="{{ selectedImage }}" style="width:160px; height=100px;" id="backgroundImage"/>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:center">
+        <input class="stylebutton" type="submit" id="save" name="save" value="Speichern" onclick="location.assign('/misc/save')">
+        <input class="stylebutton" type="button" id="back" name=back" value="Zur&uuml;ck" onclick="location.assign('/')"/>
+      </td>
+    </tr>
+  </table>
+</form>
+{% endblock %}
