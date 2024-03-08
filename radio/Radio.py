@@ -604,6 +604,16 @@ def statusCallback():
     nextRunTimeDisplay = nextRunTime.strftime('%d.%m.%Y %H:%M')
     return {"running": True, "active": active, "current_sender": currentsender['name'], "volume": volume, "equalizer": currentequalizer.name, "next_runtime": nextRunTimeDisplay}
 
+def loadBackgroundImage(backgroundfile):
+    global image
+    global imagePos
+    global screenWidth
+    global screenHeight
+    
+    image = pygame.image.load(backgroundfile)
+    image = pygame.transform.scale(image, [screenWidth, screenHeight])
+    imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
+    
 if __name__ == "__main__":
     try:
         options = Options.Get(sys.argv[0], sys.argv[1:])
@@ -665,10 +675,8 @@ if __name__ == "__main__":
     icon = pygame.image.load(iconFile)
     pygame.display.set_icon(icon)
     pygame.display.set_caption("Radio")
-    image = pygame.image.load(backgroundfile)
-    image = pygame.transform.scale(image, [screenWidth, screenHeight])
-    imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
-
+    loadBackgroundImage(backgroundfile)
+    
     closeButtonPos = (screenWidth - screenBorder - 25,screenHeight - screenBorder - 25)
     buttonDown=False
     changeSound("/var/radio/conf/sound.json")
@@ -704,6 +712,7 @@ if __name__ == "__main__":
                         changeWaketime(event.Filepath)
                     elif event.SettingsType == SettingsType.Radio:
                         changeRadio(event.Filepath)
+                        loadBackgroundImage(radioPlayer.background())
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
