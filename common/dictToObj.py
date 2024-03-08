@@ -74,6 +74,12 @@ def objToJson(o, indent = 4):
 
     return j
 
+def objToJsonFile(o, filepath, indent = 4):
+    jsonText = objToJson(o, indent)
+    with open(filepath, "w") as f:
+        f.write(jsonText)
+        f.close()
+        
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     d = {'a': 1, 'b': {'c': 2}, 'd': ["hi", {'foo': "bar"}], 'e': False, 'f': ('g', {'h': 'i'})}
