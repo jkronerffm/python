@@ -12,6 +12,7 @@ import base64
 from urllib.request import url2pathname
 from urllib.parse import urlparse
 import uuid
+import pathlib
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -234,7 +235,33 @@ def doChangeSound():
 def doMisc():
     imageList = [filename for filename in os.listdir('/var/radio/background') if filename.endswith(('.jpg', '.jpeg', '.png', '.svg'))]
     imageData = loadImageToBase64("file:///var/radio/background/background.jpg")
-    return render_template('misc.html', header='Sonstiges', imageList=imageList, selectedImage="background.jpg", imageData=imageData)
+    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage="background.jpg", imageData=imageData)
+    
+basedir = "/var/radio/"
+confdir = "conf"
+bgdir = "background"
+conffile = "radio.json"
+
+@app.route("/radio/misc/save")
+def doSaveMisc():
+    background = {}
+    background["name"] = request.args.get("background", None)
+    if background["name"] == None:
+        flash("Kein Hintergrund ausgewählt!")
+        return redirect("/radio/misc")
+        
+    background["filepath"] = os.path.join(basedir, bgdir, background["name"])
+    if not os.path.exists(background["filepath"]):
+        flash("Datei für Hintergrundbild existiert nicht")
+        return redirect("/radio/misc")
+        
+    confFilepath = os.path.join(basedir, confdir, conffile)
+    background["url"] = pathlib.Path(background["filepath"]).as_uri()
+    logging.debug(f"doSavebackground(background={background})")
+    radioData = dictToObj.objFromJson(confFilepath)
+    radioData.background= background["filepath"]
+    dictToObj.objToJsonFile(radioData, confFilepath)
+    return redirect("/radio")
         
 @app.route("/radio/background/get")
 def getBackgroundImages():

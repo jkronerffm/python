@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<form method="GET" action="/misc/save">
+<form method="GET" action="/radio/misc/save">
   <table>
     <tr>
       <td>Hintergrund:</td>
       <td>
-        <select id="selBackground" name="selBackground" onchange="changeBgPic(setImage);">
+        <select id="background" name="background" onchange="changeBgPic(setImage);">
           {% for image in imageList %}
             <option value="{{ image }}"
               {% if image == selectedImage %}

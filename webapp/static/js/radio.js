@@ -58,7 +58,7 @@ function uploadFiles(fileList, dest) {
 
 function repaintBackgroundList(fileList) {
   console.log(fileList);
-  var backgroundList = document.getElementById("selBackground")
+  var backgroundList = document.getElementById("background")
   backgroundList.options.length = 0;
   for(var file in fileList) {
     filename = fileList[file];
@@ -97,9 +97,9 @@ function setImage(imageData) {
 }
 
 function changeBgPic(callback) {
-  var selBackground = document.getElementById("selBackground");
+  var background = document.getElementById("background");
   const xhr = new XMLHttpRequest();
-  xhr.open("GET", "/radio/background/get?image=" + selBackground.value, true);
+  xhr.open("GET", "/radio/background/get?image=" + background.value, true);
   xhr.onreadystatechange = () => {
     if (xhr.readyState === 4) {
       callback(JSON.parse(xhr.response).b64Image);
