@@ -615,6 +615,8 @@ def loadBackgroundImage(backgroundfile):
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
     
 if __name__ == "__main__":
+## initialization
+## get commandline params
     try:
         options = Options.Get(sys.argv[0], sys.argv[1:])
     except ArgumentError:
@@ -623,13 +625,15 @@ if __name__ == "__main__":
 
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
     logging.debug("start radio")
+## initialize ircontrol
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     daemon = Daemon("pigpio")
     daemon.start()
-##    time.sleep(1)
+
     pi = pigpio.pi()
     buttonState = ButtonState.Start(buttonDown, buttonPressed)
     irc = ircontrol(pi, 17, irCallback, buttonState = buttonState, timeout=5)
+## initialize display sizes    
     if options.fullscreen():
         info = pygame.display.Info()
         screenWidth = info.current_w
@@ -646,23 +650,27 @@ if __name__ == "__main__":
     spkDistY = 50
     activeJob = None
     screenBorder = 10
+    senderWidth = (screenWidth - 2 * screenBorder) / 6
+    senderHeight = 60
     volume = 0
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
     focusOnVolumeSettings = False
 
-    confDir = "/var/radio/conf"
-    confFilepathRadio = os.path.join(confDir, "radio.json")
-    confFilepathWaketime = os.path.join(confDir, "waketime.json")
-    confFilepathSound = os.path.join(confDir, "sound.json")
+## initialize pathnames
+    rootDir = "/var/radio"
+    confDir = "conf"
+    confFilepathRadio = os.path.join(rootDir, confDir, "radio.json")
+    confFilepathWaketime = os.path.join(rootDir, confDir, "waketime.json")
+    confFilepathSound = os.path.join(rootDir, confDir, "sound.json")
     radioPlayer = RadioPlayer(confFilepathRadio)
-    senderWidth = (screenWidth - 2 * screenBorder) / 6
-    senderHeight = 60
     load_Settings()
+## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
     radioScheduler.setJobHandler(jobHandler)
     radioScheduler.set_testing()
     radioScheduler.start()
+## initialize watchDog    
     watchDog = WatchDog.GetInstance()
     watchDog.watch(confFilepathRadio, radioHandler)
     watchDog.watch(confFilepathWaketime, waketimeHandler)
@@ -670,6 +678,7 @@ if __name__ == "__main__":
     running = True
     active = False
     clock = pygame.time.Clock()
+## initialize display    
     backgroundfile = radioPlayer.background()
     iconFile = radioPlayer.icon()
     icon = pygame.image.load(iconFile)
@@ -683,6 +692,7 @@ if __name__ == "__main__":
     MetaBackgroundWorker.Create(radioPlayer, metaCallback)
     StatusServer.StartThread("radio", statusCallback)
     logging.debug("currentsender=%s" % currentsender)
+## start main loop
     while running:
         try:
             screen.fill(Colors.BLACK)
