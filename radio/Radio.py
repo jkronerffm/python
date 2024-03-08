@@ -639,7 +639,7 @@ if __name__ == "__main__":
         screenHeight = int(options.size()[0])
     else:
         screenWidth = 1024
-        screenHeight = 768
+        screenHeight = screenWidth * 9 / 16
     volDistX = 300
     volDistY = 10
     spkDistX = 350
