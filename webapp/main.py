@@ -234,8 +234,10 @@ def doChangeSound():
 @app.route("/radio/misc")
 def doMisc():
     imageList = [filename for filename in os.listdir('/var/radio/background') if filename.endswith(('.jpg', '.jpeg', '.png', '.svg'))]
-    imageData = loadImageToBase64("file:///var/radio/background/background.jpg")
-    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage="background.jpg", imageData=imageData)
+    radioData = dictToObj.objFromJson(os.path.join(basedir, confdir, conffile))
+    selectedImage = os.path.basename(radioData.background)
+    imageData = loadImageToBase64(pathlib.Path(radioData.background).as_uri())
+    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData)
     
 basedir = "/var/radio/"
 confdir = "conf"
