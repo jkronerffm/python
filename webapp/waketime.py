@@ -22,6 +22,7 @@ def readData(filepath):
         jsonData = json.loads(jsonStr)
         obj = dictToObj.obj(jsonData)
         f.close()
+
     return obj
 
 def build_runtime(job):
@@ -66,12 +67,14 @@ def createJobRow(job, mainLanguage):
     }
     return jobRow
 
+    
 def createJobList(mainLanguage):
     data = getData()
     jobList = []
     for job in data.scheduler.job:
         jobRow = createJobRow(job, mainLanguage)
         jobList.append(jobRow)
+    
     return jobList
 
 def getHeaderList(mainLanguage):
@@ -135,7 +138,7 @@ def getData():
     global data
     if data == None:
         data = readData(filepath)
-        
+        data.scheduler.job.sort(key=jobCompare)
     return data
 
 def getJob(name):
@@ -325,18 +328,39 @@ def clone(name):
     job['name'] = new_name()
     return (senderList, job)
     
+def jobCompare(job):
+    if job.type=="cron":
+        dow = retranslate_daysOfWeek(job.runtime.day_of_week)
+        dowList = dow.split(',')
+        value = 0
+        for day in dowList:
+            value |= daysValues[day]
+        
+        return f"cron({value:05d}{int(job.runtime.hour):02d}{int(job.runtime.minute):02d})"
+    else:
+        return f"date({job.runtime.date}_{job.runtime.time})"
+        
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    dow = translate_daysOfWeek("mon,tue,wed")
-    logging.debug(f"translate_daysOfWeek returned {dow}")
-    dow = translate_daysOfWeek(["mon", "tue", "wed"])
-    logging.debug(f"translate_daysOfWeek returned {dow}")
-    days = translate_days('mon-wed', 'de')
-    logging.debug(f"translate_days returned {days}")
-    job = getJob('start_workday_halfpastfive')
-    logging.debug(job)
-    t = build_runtimeDay(job, 'de')
-    logging.debug(f"build_runtimeDay({job}) returned {t})")
-    (senderList, job) = clone(job.name)
-    print(senderList)
-    print(job)
+    # logging.basicConfig(level=logging.DEBUG)
+    # dow = translate_daysOfWeek("mon,tue,wed")
+    # logging.debug(f"translate_daysOfWeek returned {dow}")
+    # dow = translate_daysOfWeek(["mon", "tue", "wed"])
+    # logging.debug(f"translate_daysOfWeek returned {dow}")
+    # days = translate_days('mon-wed', 'de')
+    # logging.debug(f"translate_days returned {days}")
+    # job = getJob('start_workday_halfpastfive')
+    # logging.debug(job)
+    # t = build_runtimeDay(job, 'de')
+    # logging.debug(f"build_runtimeDay({job}) returned {t})")
+    # (senderList, job) = clone(job.name)
+    # print(senderList)
+    # print(job)
+    
+    data = getData()
+    for job in data.scheduler.job:
+        print(job)
+
+    print(20*"=" + " sort jobs: ")
+    data.scheduler.job.sort(key=jobCompare)
+    for job in data.scheduler.job:
+        print(job)

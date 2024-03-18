@@ -16,7 +16,7 @@
       {{ sender["url"] }}
     </td>
     <td>
-       {% if len(imageList) > 0 %}
+       {% if imageList is defined and imageList|length > 0 %}
       <img src="{{ imageList.pop(0) }}" alt="{{ sender["image"] }}" style="width: 32px; height: 32px;"/>
       {% endif %}
     </td>
