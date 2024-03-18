@@ -615,6 +615,7 @@ def loadBackgroundImage(backgroundfile):
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
     
 if __name__ == "__main__":
+    import cProfile, pstats, io, pathlib
 ## initialization
 ## get commandline params
     try:
@@ -623,6 +624,11 @@ if __name__ == "__main__":
         printUsage(sys.argv[0])
         sys.exit(-1)
 
+    if options.profiling():
+        profiler = cProfile.Profile()
+        profiler.enable()
+    else:
+        profiler = None
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
     logging.debug("start radio")
 ## initialize ircontrol
@@ -766,4 +772,15 @@ if __name__ == "__main__":
     radioScheduler.shutdown()
     pi.stop()
     daemon.kill()
+    if options.profiling() and profiler != None:
+        profiler.disable()
+        logDir = "/var/radio/log"
+        logFile = "stats.log"
+        if not os.path.exists(logDir):
+            os.mkdir(logDir, mode=777)
+        s = io.StringIO()
+        stats = pstats.Stats(profiler, stream=s).sort_stats('ncalls')
+        stats.print_stats()
+        with open(os.path.join(logDir, logFile), "w") as f:
+            f.write(s.getvalue())
     sys.exit()

@@ -10,12 +10,13 @@ class FullscreenAndSizeError(ArgumentError):
         super().__init__("You cannot use both arguments --fullscreen and --size!")
 
 class Options:
-    opts = "dfhs:"
-    long_opts = ["debug", "fullscreen", "help", "size="]
+    opts = "dfhps:"
+    long_opts = ["debug", "fullscreen", "help", "profile", "size="]
 
     def __init__(self):
         self._debug = False
         self._fullscreen = False
+        self._profiling = False
         self._size = None
 
     def debug(self):
@@ -27,17 +28,23 @@ class Options:
     def fullscreen(self):
         return self._fullscreen
 
+    def profiling(self):
+        return self._profiling
+    
     def setFullscreen(self, value = True):
         self._fullscreen = value
         
     def size(self):
         return self._size
 
+    def setProfiling(self, value = True):
+        self._profiling = value
+        
     def setSize(self, value):
         self._size = value
         
     def printUsage(self, command):
-        print(f"{command} [-d|--debug] [-f|--fullscreen] [-h|--help] [-s <size>|--size=size]")
+        print(f"{command} [-d|--debug] [-f|--fullscreen] [-h|--help] [-p|--profile] [-s <size>|--size=size]")
 
     def getOptions(self,command, argv):
         opts, args = getopt.getopt(argv, Options.opts, Options.long_opts)
@@ -51,6 +58,8 @@ class Options:
             elif opt in ("-h", "--help"):
                 self.printUsage(command)
                 sys.exit(0)
+            elif opt in ("-p", "--profile"):
+                self.setProfiling()
             elif opt in ("-s", "--size"):
                 if self.fullscreen():
                     raise FullscreenAndSizeError()
