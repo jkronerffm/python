@@ -1,4 +1,4 @@
-2import sys
+import sys
 import os
 sys.path.append(os.path.dirname(os.getcwd()))
 from flask import Flask, redirect, request, render_template, flash,jsonify
