@@ -30,6 +30,7 @@ from enum import Enum
 import say
 from Options import Options, ArgumentError
 from common.Daemon import Daemon
+import cProfile, pstats, io
 
 pygame.init()
 
@@ -286,11 +287,14 @@ def draw_sender(sender, x, y):
     imageDrawn = False
     imageWidth = senderWidth
     imageHeight = 60
-    if sender['image'] != '':
-        imageurl = sender['image']
+    if sender['imagefile'] != '':
+        imageurl = sender['imagefile']
         imagepath = unquote(urlparse(imageurl).path)
+        image = sender['image'] if 'image' in sender else None
         if isfile(imagepath):
-            image = pygame.image.load(imagepath)
+            if image == None:
+                image = pygame.image.load(imagepath)
+                sender['image'] = image
             (width, height) = image.get_size()
             imageWidth = 64
             imageHeight = imageWidth * height / width
@@ -613,9 +617,26 @@ def loadBackgroundImage(backgroundfile):
     image = pygame.image.load(backgroundfile)
     image = pygame.transform.scale(image, [screenWidth, screenHeight])
     imagePos = ((screenWidth - image.get_width())/2,(screenHeight - image.get_height()) if (screenHeight >  image.get_height()) else 0)
+
+def initProfiler():
+    profiler = cProfile.Profile()
+    profiler.enable()
+    return profiler
+
+def saveStats(profiler, filename):
+    if profiler != None:
+        profiler.disable()
+        logDir = "/var/radio/log"
+        logFile = filename
+        if not os.path.exists(logDir):
+            os.mkdir(logDir, mode=777)
+        s = io.StringIO()
+        stats = pstats.Stats(profiler, stream=s).sort_stats(options.statKey())
+        stats.print_stats()
+        with open(os.path.join(logDir, logFile), "w") as f:
+            f.write(s.getvalue())
     
 if __name__ == "__main__":
-    import cProfile, pstats, io, pathlib
 ## initialization
 ## get commandline params
     try:
@@ -624,11 +645,8 @@ if __name__ == "__main__":
         printUsage(sys.argv[0])
         sys.exit(-1)
 
-    if options.profiling():
-        profiler = cProfile.Profile()
-        profiler.enable()
-    else:
-        profiler = None
+    profiler = initProfiler() if options.profiling() else None
+
     logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
     logging.debug("start radio")
 ## initialize ircontrol
@@ -698,6 +716,10 @@ if __name__ == "__main__":
     MetaBackgroundWorker.Create(radioPlayer, metaCallback)
     StatusServer.StartThread("radio", statusCallback)
     logging.debug("currentsender=%s" % currentsender)
+    if options.profiling():
+        saveStats(profiler, "initStats.log")
+        profiler = initProfiler()
+        
 ## start main loop
     while running:
         try:
@@ -772,15 +794,6 @@ if __name__ == "__main__":
     radioScheduler.shutdown()
     pi.stop()
     daemon.kill()
-    if options.profiling() and profiler != None:
-        profiler.disable()
-        logDir = "/var/radio/log"
-        logFile = "stats.log"
-        if not os.path.exists(logDir):
-            os.mkdir(logDir, mode=777)
-        s = io.StringIO()
-        stats = pstats.Stats(profiler, stream=s).sort_stats('ncalls')
-        stats.print_stats()
-        with open(os.path.join(logDir, logFile), "w") as f:
-            f.write(s.getvalue())
+    if options.profiling():
+        saveStats(profiler, "loopStats.log")
     sys.exit()
