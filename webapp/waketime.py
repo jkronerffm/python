@@ -41,7 +41,7 @@ def build_runtimeDay(job, mainLanguage):
     return s
 
 def build_runtimeTime(job):
-    logging.debug(f"build_runtimeTime(job={str(job)})")
+    logging.debug(f"build_runtimeTime()")
     runtime = job.runtime
     if job.type == "cron":
         hour = "%02d" % (int(runtime.hour)) if type(runtime.hour) is int else runtime.hour

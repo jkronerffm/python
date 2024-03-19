@@ -76,7 +76,7 @@ def doListRadioSender():
     senderList = o.sender
     imageList = []
     for sender in senderList:
-        image = loadImageToBase64(sender.image)
+        image = loadImageToBase64(sender.imagefile)
         imageList.append(image)
     return render_template("radio.html", title="Radio Sender", header="Radio Sender", headerlist=["Name", "Adresse", "Bild"],senderList = senderList, imageList = imageList)
 
@@ -91,8 +91,8 @@ def doEditSender():
     else:
         return redirect("/radio/sender")
     logging.debug(f"doSenderEdit(id={senderId},sender={sender})")
-    imageData=loadImageToBase64(sender.image)
-    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.image), imageData=imageData, canDelete=True, isNew=False)
+    imageData=loadImageToBase64(sender.imagefile)
+    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.imagefile), imageData=imageData, canDelete=True, isNew=False)
 
 @app.route("/radio/sender/add")
 def doAddSender():
@@ -151,11 +151,8 @@ def doWaketime():
 def doWaketimeGrid():
     acceptLanguages=str(request.accept_languages)
     mainLanguage = getMainLanguage(acceptLanguages)
-    logging.debug(f"waketimeGrid(accept_languages:{acceptLanguages})")
-    logging.debug(f">> mainLanguage = {mainLanguage}")
     jobList = waketime.createJobList(mainLanguage)
     headerList = waketime.getHeaderList(mainLanguage)
-    logging.debug(f">> len(headerList) = {len(headerList)}, headerList={headerList}")    
     return render_template("waketimeGrid.html", header="Weckzeiten", headerList = headerList, jobList = jobList)
 
 @app.route("/radio/waketime/set_active")
