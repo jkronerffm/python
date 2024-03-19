@@ -19,7 +19,9 @@
         {{ job["timeannouncement"] }}
       {% endif %}
       </td>
-      <td><input type="checkbox" name="active" {{ job["active"] }} id="{{ job["name"] }}" onclick="setActive('{{ job["name"] }}')"></td>
+      <td>
+          <input type="checkbox" name="active" {{ job["active"] }} id="{{ job["name"] }}" onclick="setActive('{{ job["name"] }}')">
+      </td>
     </tr>
     {% endfor %}
   <tr>
