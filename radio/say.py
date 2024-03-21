@@ -1,6 +1,8 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.getcwd()))
+root = os.path.dirname(os.getcwd())
+sys.path.append(root)
+sys.path.append(os.path.join(root, "weather"))
 from fuzzyTime import fuzzyTime
 import gtts
 import uuid
@@ -12,6 +14,8 @@ import urllib
 import time
 import locale
 from enum import Enum
+from get_weather import WeatherCalculator as Weatherman
+from area import Area
 
 def play(filepath):
     global radioPlayer
@@ -159,9 +163,9 @@ class TestClass:
         self.testClass.testWithoutFuzzyTime()
         self.testClass.testDate()
         self.testClass.testSayTimeWithGreeting()
-
-        
+    
 if __name__ == "__main__":
     logging.basicConfig(level = logging.DEBUG)
+
     
-    testMessageFiles()
+    ##testMessageFiles()

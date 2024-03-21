@@ -6,6 +6,7 @@ sys.path.append(os.path.join(basepath, "have_internet"))
 sys.path.append(os.path.join(basepath, "common"))
 sys.path.append(os.path.join(basepath, "ircontrol"))
 sys.path.append(os.path.join(basepath, "ipc"))
+sys.path.append(os.path.join(basepath, "weather"))
 from os.path import isfile
 import json
 import pygame
@@ -14,6 +15,8 @@ import dictToObj
 from ipc import StatusServer
 from ircontrol import ircontrol, ButtonState
 from ircontrol import LastPressed
+from get_weather import WeatherCalculator as Weatherman
+from area import Area
 from pygame.event import Event
 import math
 from datetime import datetime
@@ -59,7 +62,8 @@ class IrKey:
     Up = 7
     Down = 8
     Display = 9
-
+    Weather = 10
+    
     @staticmethod
     def FromButtonKey(buttonKey):
         KeyMapping = {
@@ -72,7 +76,8 @@ class IrKey:
             'left': IrKey.Left,
             'right': IrKey.Right,
             'display': IrKey.Display,
-            'pause': IrKey.Pause
+            'pause': IrKey.Pause,
+            'weather': IrKey.Weather
         }
         result = 0
         if buttonKey in KeyMapping:
@@ -575,6 +580,28 @@ def sayTime():
     if active:
         radioPlayer.play(currentsender['name'])
 
+def weatherCallback(weather):
+    text = Weatherman.HumanUnderstandableStatement(weather)
+    logging.debug(f"weatherCallback(text={text})")
+    filepath, url = say.say(text, "de")
+    radioPlayer.playUrl(url, True)
+    os.remove(filepath)
+
+def sayWeather():
+    global active
+    global currentsender
+
+    if active:
+        radioPlayer.stop()
+        
+    if haveInternet():
+        area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
+        logging.debug(f"sayWeather(area={area})")
+        weatherman = Weatherman(area, weatherCallback)
+        weatherman.run()
+        
+    if active:
+        radioPlayer.play(currentsender['name'])
 def nextSender():
     global radioPlayer
     global currentsender
@@ -774,6 +801,8 @@ if __name__ == "__main__":
                             nextSender()
                         elif event.IrKey == IrKey.Display:
                             sayTime()
+                        elif event.IrKey == IrKey.Weather:
+                            sayWeather()
                     elif event.IrState == IrState.ButtonDown:
                         if event.IrKey == IrKey.VolumeUp and active:
                             logging.debug(f"IRControl-->VolumeUp: increase volume")
