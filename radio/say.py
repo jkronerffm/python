@@ -166,6 +166,20 @@ class TestClass:
     
 if __name__ == "__main__":
     logging.basicConfig(level = logging.DEBUG)
-
-    
+    path = "/var/radio/wakeup"
+    statementList = []
+    statementList += ["Ja, hallo erstmal."]
+    statementList += ["Ich weiß nicht, ob Du's schon wusstest, aber ich bin Dein freundlicher Wecker."]
+    statementList += ["Jetzt haben wir gerade die Zeit erreicht, die Du für heute eingestellt hast."]
+    statementList += ["Bleibe also besser nicht länger im Bett liegen, sondern bewege erst Dein linkes und dein rechtes Bein und dann den Rest deines Körpers aus dem Bett."]
+    statementList += ["Ich wünsche Dir einen schönen Tag"]
+    itemList = []
+    for index, statement in enumerate(statementList):
+        filename, url = say(statement, "de")
+        basename, extension = os.path.splitext(filename)
+        destpath = os.path.join(path, f"item_{index:02}{extension}")
+        os.rename(filename, destpath)
+        itemList.append(destpath)
+    with open(os.path.join(path, "statement.m3u"), "w") as outfile:
+        outfile.write("\n".join(str(item) for item in itemList))
     ##testMessageFiles()
