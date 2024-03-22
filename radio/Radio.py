@@ -24,6 +24,8 @@ from time import strftime, localtime
 from ctypes import cast, POINTER
 from RadioPlayer import *
 import logging
+from logging import handlers
+from logging.handlers import RotatingFileHandler
 from Scheduler import RadioScheduler
 from have_internet import haveInternet
 from urllib.parse import unquote, urlparse
@@ -169,7 +171,6 @@ def load_Settings():
     global currentname
     global volume
     global SettingsFilepath
-    
     logging.debug("load_Settings")
     myFile = Path(SettingsFilepath)
     if not  myFile.exists():
@@ -192,6 +193,7 @@ def check_click(pos):
     global data
     global currentsender
     global radioPlayer
+    
     logging.debug("check_click(%s)" % str(pos))
     if not active:
         return activate()
@@ -217,6 +219,8 @@ def activate():
     global active
     global radioPlayer
     global currentsender
+
+    
     if active:
         deactivate()
         return True
@@ -523,7 +527,7 @@ def radioHandler(filepath, modificationTime):
 def soundHandler(filepath, modificationTime):
     logging.debug(f"soundHandler(filepath={filepath}): load config file")
     event = pygame.event.Event(SettingsEvent, {'SettingsType': SettingsType.Sound, 'Filepath': filepath})
-    logging.debug(f">> post event {event}")
+    logger.debug(f">> post event {event}")
     pygame.event.post(event)
 
 def buttonDown(buttonCode):
@@ -595,13 +599,16 @@ def sayWeather():
         radioPlayer.stop()
         
     if haveInternet():
-        area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
-        logging.debug(f"sayWeather(area={area})")
-        weatherman = Weatherman(area, weatherCallback)
-        weatherman.run()
-        
+        try:
+            area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
+            logging.debug(f"sayWeather(area={area})")
+            weatherman = Weatherman(area, weatherCallback)
+            weatherman.run()
+        except Exception as e:
+            logging.exception(f"an error has been raised: {e}. Please contact the developer!")
     if active:
         radioPlayer.play(currentsender['name'])
+        
 def nextSender():
     global radioPlayer
     global currentsender
@@ -674,8 +681,16 @@ if __name__ == "__main__":
 
     profiler = initProfiler() if options.profiling() else None
 
-    logging.basicConfig(level = logging.DEBUG if options.debug() else logging.FATAL)
-    logging.debug("start radio")
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG if options.debug() else logging.FATAL)
+    console_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(console_handler)
+    logDir = "/var/radio/log"
+    logFilename = "radio.log"
+    logFilepath = os.path.join(logDir, logFilename)
+    file_handler = RotatingFileHandler(logFilepath, maxBytes=4096, backupCount=5)
+    logger.addHandler(file_handler)
+    logger.debug("start radio")
 ## initialize ircontrol
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     daemon = Daemon("pigpio")
