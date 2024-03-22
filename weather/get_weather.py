@@ -73,7 +73,11 @@ class WeatherCalculator:
     async def get_weather(self):
         async with python_weather.Client(unit=python_weather.METRIC, locale=python_weather.Locale.GERMAN) as client:
             weather = await client.get(self._area.city())
-            date = weather.current.date
+            try:
+                date = weather.current.date
+            except:
+                date = datetime.datetime.now()
+                
             sdate = self.formatDate(date)
             forecast = next(weather.forecasts)
             astralCalculator = AstralCalculator(self._area, date)
@@ -118,7 +122,7 @@ class WeatherCalculator:
     def HumanUnderstandableStatement(weather):
         l = [f"Die Außentemperatur beträgt jetzt {weather['current']['temperature']}°C.",
              f"Das Wetter ist jetzt {weather['current']['description']}.",
-             f"Die Temperaturen werden heute zwischen {weather['forecast']['minTemperature']} und {weather['forecast']['maxTemperature']}°C betragen.",
+             f"Die Temperaturen werden heute zwischen {weather['forecast']['minTemperature']} und {weather['forecast']['maxTemperature']}°C liegen.",
              f"Die weiteren Aussichten für heute sind {weather['forecast']['description']}."
              ]
         return " ".join(l)
