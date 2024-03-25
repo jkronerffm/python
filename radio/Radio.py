@@ -7,6 +7,7 @@ sys.path.append(os.path.join(basepath, "common"))
 sys.path.append(os.path.join(basepath, "ircontrol"))
 sys.path.append(os.path.join(basepath, "ipc"))
 sys.path.append(os.path.join(basepath, "weather"))
+from LogFormatter import LogFormatter
 from os.path import isfile
 import json
 import pygame
@@ -683,12 +684,15 @@ if __name__ == "__main__":
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG if options.debug() else logging.FATAL)
+    logFormatter = LogFormatter()    
     console_handler = logging.StreamHandler(sys.stdout)
     logger.addHandler(console_handler)
+    console_handler.setFormatter(logFormatter)
     logDir = "/var/radio/log"
     logFilename = "radio.log"
     logFilepath = os.path.join(logDir, logFilename)
     file_handler = RotatingFileHandler(logFilepath, maxBytes=4096, backupCount=5)
+    file_handler.setFormatter(logFormatter)
     logger.addHandler(file_handler)
     logger.debug("start radio")
 ## initialize ircontrol
