@@ -62,7 +62,7 @@ class WeatherCalculator:
         result = None
         for hourlyForecast in forecast.hourly:
             timepoint = datetime.datetime.combine(today, hourlyForecast.time)
-            d = (timepoint - now).total_seconds()
+            d = abs((timepoint - now).total_seconds())
             if d < minValue:
                 result = hourlyForecast
                 minValue = d
@@ -70,6 +70,156 @@ class WeatherCalculator:
 
         return result
 
+    @staticmethod
+    def translate_windDirection(value, lang='de'):
+        result = ""
+        values = str(value).split(' ')
+        direction = [
+            {
+                'en': 'north',
+                'de': 'Nord',
+                'es': 'norte'
+            },
+            {
+                'en': 'northeast',
+                'de': 'Nordost',
+                'es': 'noreste'
+            },
+            {
+                'en': 'east',
+                'de': 'Ost',
+                'es': 'este'
+            },
+            {
+                'en': 'southeast',
+                'de': 'Südost',
+                'es': 'sureste'
+            },
+            {
+                'en': 'south',
+                'de': 'Süd',
+                'es': 'sur'
+            },
+            {
+                'en': 'southwest',
+                'de': 'Südwest',
+                'es': 'suroeste'
+            },
+            {
+                'en': 'west',
+                'de': 'West',
+                'es': 'oeste'
+            },
+            {
+                'en': 'northwest',
+                'de': 'Nordwest',
+                'es': 'noroeste'
+            }
+        ]
+        for v in values:
+            translation = next(d for d in direction if d['en'].casefold() == v.casefold())
+            if not (lang in translation):
+                raise KeyError('Requested language is not in translations')
+
+            if len(result) > 0:
+                result+= " "
+            result += translation[lang]
+            
+        return result
+    
+    @staticmethod
+    def get_windStrength(value):
+        windStrength = None
+        windSpeedToStrength = [
+            {
+                'speed': lambda speed : speed == 0,
+                'strength': 0,
+                'description': 'Windstille'
+            },
+            {
+                'speed': lambda speed : speed <= 6,
+                'strength': 1,
+                'description': 'leiser Zug'
+            },
+            {
+                'speed': lambda speed : speed >= 7  and speed <= 11,
+                'strength': 2,
+                'description': 'leichte Brise'
+            },
+            {
+                'speed': lambda speed: speed >= 12 and speed <= 18,
+                'strength': 3,
+                'description': 'schwache Brise'
+            },
+            {
+                'speed': lambda speed : speed >= 19 and speed <= 25,
+                'strength': 4,
+                'description': 'mäßiger Wind'
+            },
+            {
+                'speed': lambda speed : speed >= 26 and speed <= 35,
+                'strength': 5,
+                'description': 'frischer Wind' 
+            },
+            {
+                'speed': lambda speed : speed >= 36 and speed <= 46,
+                'strength': 6,
+                'description': 'starker Wind'
+            },
+            {
+                'speed': lambda speed: speed >= 47 and speed <= 61,
+                'strength': 7,
+                'description': 'steifer Wind'
+            },
+            {
+                'speed': lambda speed: speed >= 62 and speed <=72,
+                'strength': 8,
+                'description': 'stürmischer Wind'
+            },
+            {
+                'speed': lambda speed: speed >= 73 and speed <= 86,
+                'strength': 9,
+                'description': 'Sturm'
+            },
+            {
+                'speed': lambda speed: speed >= 87 and speed <= 100,
+                'strength': 10,
+                'description': 'schwerer Sturm'
+            },
+            {
+                'speed': lambda speed: speed >= 101 and speed <= 15,
+                'strength': 11,
+                'description': 'orkanartiger Sturm',
+            },
+            {
+                'speed': lambda speed: speed >= 118,
+                'strength': 12,
+                'description': 'Orkan'
+            }
+        ]
+        windStrength = [w for w in windSpeedToStrength if w['speed'](value)]
+        return windStrength[0]
+
+    @staticmethod
+    def get_windStrengthAsSentence(when, windStrength, direction):
+        strength = windStrength['strength']
+        description = windStrength['description']
+        if strength == 0:
+            result = f"{when} ist es {description}."
+        else:
+            result = f"Aus {direction}"
+            if strength < 6:
+                result += " weht"
+            else:
+                result += " bläst"
+            result += f" {when}" 
+            if strength == 1 or strength >= 4:
+                result += " ein"
+            else:
+                result += " eine"
+            result += f" {description}."
+        return result
+        
     async def get_weather(self):
         async with python_weather.Client(unit=python_weather.METRIC, locale=python_weather.Locale.GERMAN) as client:
             weather = await client.get(self._area.city())
@@ -82,8 +232,10 @@ class WeatherCalculator:
             forecast = next(weather.forecasts)
             astralCalculator = AstralCalculator(self._area, date)
             currentForecast = self.get_currentForecast(forecast)
+            windDirection = WeatherCalculator.translate_windDirection(currentForecast.wind_direction)
             suntimes = astralCalculator.get_suntimes()
             moon = astralCalculator.get_moontimes()
+            windStrength = WeatherCalculator.get_windStrength(weather.current.wind_speed)
             result = {
                 'date': sdate,
                 'area': {
@@ -93,12 +245,18 @@ class WeatherCalculator:
                 },
                 'current': {
                     'temperature': weather.current.temperature,
-                    'description': self.translate(weather.current.description)
+                    'description': self.translate(weather.current.description),
+                    'windStrength': WeatherCalculator.get_windStrength(weather.current.wind_speed),
+                    'windDirection': WeatherCalculator.translate_windDirection(weather.current.wind_direction),
+                    'feelsLike': weather.current.feels_like
                 },
                 'forecast': {
                     'minTemperature': forecast.lowest_temperature,
                     'maxTemperature': forecast.highest_temperature,
-                    'description': self.translate(currentForecast.description)
+                    'description': self.translate(currentForecast.description),
+                    'feelsLike': currentForecast.feels_like,
+                    'windStrength': WeatherCalculator.get_windStrength(currentForecast.wind_speed),
+                    'windDirection': WeatherCalculator.translate_windDirection(currentForecast.wind_direction)
                 },
                 'sun': {
                     'rise': suntimes['sunrise'],
@@ -121,15 +279,17 @@ class WeatherCalculator:
     @staticmethod
     def HumanUnderstandableStatement(weather):
         l = [f"Die Außentemperatur beträgt jetzt {weather['current']['temperature']}°C.",
-             f"Das Wetter ist jetzt {weather['current']['description']}.",
+             f"Das fühlt sich an wie {weather['current']['feelsLike']}°C." if weather['current']['temperature'] != weather['current']['feelsLike'] else "",
+             f"Das Wetter ist {weather['current']['description']}.",
+             WeatherCalculator.get_windStrengthAsSentence('', weather['current']['windStrength'], weather['current']['windDirection']),
              f"Die Temperaturen werden heute zwischen {weather['forecast']['minTemperature']} und {weather['forecast']['maxTemperature']}°C liegen.",
-             f"Die weiteren Aussichten für heute sind {weather['forecast']['description']}."
+             f"Die weiteren Aussichten sind {weather['forecast']['description']}."
              ]
         return " ".join(l)
         
     
 def weatherCallback(weather):
-    print(f"weatherCallback(weather={weather})")
+    logging.debug(f"weatherCallback(weather={weather})")
     print(WeatherCalculator.HumanUnderstandableStatement(weather))
     
 if __name__ == "__main__":
