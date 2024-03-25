@@ -16,7 +16,7 @@ import dictToObj
 from ipc import StatusServer
 from ircontrol import ircontrol, ButtonState
 from ircontrol import LastPressed
-from get_weather import WeatherCalculator as Weatherman
+from WeatherCalculator import WeatherCalculator as Weatherman
 from area import Area
 from pygame.event import Event
 import math
@@ -37,6 +37,7 @@ import say
 from Options import Options, ArgumentError
 from common.Daemon import Daemon
 import cProfile, pstats, io
+import asyncio
 
 pygame.init()
 
@@ -586,7 +587,7 @@ def sayTime():
         radioPlayer.play(currentsender['name'])
 
 def weatherCallback(weather):
-    text = Weatherman.HumanUnderstandableStatement(weather)
+    text = Weatherman.HumanUnderstandableForecast(weather)
     logging.debug(f"weatherCallback(text={text})")
     filepath, url = say.say(text, "de")
     radioPlayer.playUrl(url, True)
@@ -603,8 +604,9 @@ def sayWeather():
         try:
             area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
             logging.debug(f"sayWeather(area={area})")
-            weatherman = Weatherman(area, weatherCallback)
-            weatherman.run()
+            weatherman = Weatherman(area, None)
+            freeSpeechForecast = Weatherman.HumanUnderstandableForecast(weatherman.run())
+            asyncio.run(say.say_multipleLineOutput(freeSpeechForecast, "de", radioPlayer))
         except Exception as e:
             logging.exception(f"an error has been raised: {e}. Please contact the developer!")
     if active:

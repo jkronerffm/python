@@ -14,12 +14,14 @@ import urllib
 import time
 import locale
 from enum import Enum
-from get_weather import WeatherCalculator as Weatherman
+from WeatherCalculator import WeatherCalculator as Weatherman
 from area import Area
-
-def play(filepath):
+import asyncio
+import queue
+from threading import Lock
+def play(filepath, blocking = False):
     global radioPlayer
-    radioPlayer.playUrl(filepath)
+    radioPlayer.playUrl(filepath, blocking)
     
 def say(text, language):
     logging.debug(f"say(text={text}, language={language})")
@@ -163,9 +165,8 @@ class TestClass:
         self.testClass.testWithoutFuzzyTime()
         self.testClass.testDate()
         self.testClass.testSayTimeWithGreeting()
-    
-if __name__ == "__main__":
-    logging.basicConfig(level = logging.DEBUG)
+
+def test_func():
     path = "/var/radio/wakeup"
     statementList = []
     statementList += ["Ja, hallo erstmal."]
@@ -182,4 +183,66 @@ if __name__ == "__main__":
         itemList.append(destpath)
     with open(os.path.join(path, "statement.m3u"), "w") as outfile:
         outfile.write("\n".join(str(item) for item in itemList))
+
+async def produce_multipleLineOutput(sentences, lang, q):
+    logging.debug("produce_multipleLineOutput()")
+    for sentence in sentences:
+        logging.debug(f">>> {sentence}")
+        (filename, url) = say(sentence, lang)
+        await asyncio.sleep(0.5)
+        logging.debug(f">>> {filename}, {url}")
+        q.put((filename, url))
+    logging.debug("produce_multipleOutput(): after the loop")
+    await asyncio.sleep(0.5)
+    q.join()
+    logging.debug("produce_multi0leOutput(): processing the audio files is done")
+    loop = asyncio.get_running_loop()
+    logging.debug("produce_multipleLineOutput() is done")
+    return len(sentences)
+    
+async def consume_multipleLineOutput(q, len_of_sentences, radioPlayer):
+    logging.debug("consume_multipleLineOutput()")
+    number_of_sentence = 0
+    while number_of_sentence < len_of_sentences:
+        await asyncio.sleep(0.5)
+        (filename, url) = q.get()
+        logging.debug(f"consume_multipleLineOutput(url={url}) play file")
+        radioPlayer.playUrl(url, blocking=True)
+        logging.debug(f"consume_multipleLineOutput(filename={filename}) delete file")
+        os.remove(filename)
+        q.task_done()
+        number_of_sentence+= 1
+    logging.debug("consume_multipleLineOutput() is done")
+    return number_of_sentence
+
+async def say_multipleLineOutput(sentences, lang, radioPlayer):
+    logging.debug("say_multipleLineOutput()")
+    q = queue.Queue()
+    res = await asyncio.gather(produce_multipleLineOutput(sentences, lang, q), consume_multipleLineOutput(q, len(sentences), radioPlayer))
+    logging.debug(f"say_multipleLineOutput: result is {res}")
+    
+def test_multipleLineOutput():
+    sentences = []
+    sentences += ["Ja, hallo erstmal."]
+    sentences += ["Ich weiß nicht, ob Du's schon wusstest, aber ich bin Dein freundlicher Wecker."]
+    sentences += ["Jetzt haben wir gerade die Zeit erreicht, die Du für heute eingestellt hast."]
+    sentences += ["Bleibe also besser nicht länger im Bett liegen, sondern bewege erst Dein linkes und dein rechtes Bein und dann den Rest deines Körpers aus dem Bett."]
+    sentences += ["Ich wünsche Dir einen schönen Tag"]
+    asyncio.run(say_multipleLineOutput(sentences, "de"))
+
+def test_weatherOutput():
+    area = Area(city = "Frankfurt am Main",
+                country = "Germany",
+                timezone = "Europe/Berlin",
+                latitude = 50.11,
+                longitude = 8.68)
+    
+    weatherman = Weatherman(area, None)
+    freeSpeechForecast = Weatherman.HumanUnderstandableStatement(weatherman.run())
+    asyncio.run(say_multipleLineOutput(freeSpeechForecast, "de"))
+    
+if __name__ == "__main__":
+    logging.basicConfig(level = logging.DEBUG)
+    radioPlayer = RadioPlayer.RadioPlayer("/var/radio/conf/radio.json")
+    test_weatherOutput()
     ##testMessageFiles()

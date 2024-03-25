@@ -274,19 +274,19 @@ class WeatherCalculator:
             return result
 
     def run(self):
-        asyncio.run(self.get_weather())
+        return asyncio.run(self.get_weather())
 
     @staticmethod
-    def HumanUnderstandableStatement(weather):
-        l = [f"Die Außentemperatur beträgt jetzt {weather['current']['temperature']}°C.",
-             f"Das fühlt sich an wie {weather['current']['feelsLike']}°C." if weather['current']['temperature'] != weather['current']['feelsLike'] else "",
-             f"Das Wetter ist {weather['current']['description']}.",
-             WeatherCalculator.get_windStrengthAsSentence('', weather['current']['windStrength'], weather['current']['windDirection']),
-             f"Die Temperaturen werden heute zwischen {weather['forecast']['minTemperature']} und {weather['forecast']['maxTemperature']}°C liegen.",
-             f"Die weiteren Aussichten sind {weather['forecast']['description']}."
-             ]
-        return " ".join(l)
-        
+    def HumanUnderstandableForecast(weather):
+        l = [f"Die Außentemperatur beträgt jetzt {weather['current']['temperature']}°C."]
+        if abs(weather['current']['temperature'] - weather['current']['feelsLike']) > 3:
+            l+= [f"Das fühlt sich an wie {weather['current']['feelsLike']}°C."]
+        l+= [f"Das Wetter ist {weather['current']['description']}.",]
+        l+= [WeatherCalculator.get_windStrengthAsSentence('', weather['current']['windStrength'], weather['current']['windDirection'])]
+        l+= [f"Die Temperaturen werden heute zwischen {weather['forecast']['minTemperature']} und {weather['forecast']['maxTemperature']}°C liegen."]
+        l+= [f"Die weiteren Aussichten sind {weather['forecast']['description']}."]
+        return l
+
 def weatherCallback(weather):
     logging.debug(f"weatherCallback(weather={weather})")
     print(WeatherCalculator.HumanUnderstandableStatement(weather))
@@ -298,6 +298,7 @@ if __name__ == "__main__":
                 timezone = "Europe/Berlin",
                 latitude = 50.11,
                 longitude = 8.68)
-    weatherCalculator = WeatherCalculator(area, weatherCallback)
-    weatherCalculator.run()
+    weatherCalculator = WeatherCalculator(area)
+    result = WeatherCalculator.HumanUnderstandableStatement(weatherCalculator.run())
+    logging.debug(f"result of WeatherCalculator:{result}")
     
