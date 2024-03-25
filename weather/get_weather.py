@@ -287,7 +287,6 @@ class WeatherCalculator:
              ]
         return " ".join(l)
         
-    
 def weatherCallback(weather):
     logging.debug(f"weatherCallback(weather={weather})")
     print(WeatherCalculator.HumanUnderstandableStatement(weather))
