@@ -167,6 +167,7 @@ def activateJob(name):
 def writeData():
     global data
     global filepath
+    data.scheduler.job.sort(key=jobCompare)
     jsonStr = dictToObj.objToJson(data)
     with open(filepath, 'w') as f:
         f.write(jsonStr)
