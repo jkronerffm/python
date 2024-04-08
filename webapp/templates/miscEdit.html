@@ -32,10 +32,26 @@
         <label for="timeColor">Farbe f&uuml;r Zeit</label>
       </td>
     </tr>
+    <!--
+    <tr>
+      <td><label for="timeSize">Gr&ouml;&szlig;e</label></td>
+      <td>
+        <select id="timeSize" name="timeSize">
+          {% for size in sizeList %}
+          <option value="{{ size }}"
+            {% if size==selectedTimeSize %}
+            selected
+            {% endif %}
+          >{{ size }}</option>
+          {% endfor %}
+        </select>
+      </td>
+    </tr>
+    -->
     <tr>
       <td colspan="3" style="text-align:center">
         <input class="stylebutton" type="submit" id="save" name="save" value="Speichern" onclick="location.assign('/misc/save')">
-        <input class="stylebutton" type="button" id="back" name=back" value="Zur&uuml;ck" onclick="location.assign('/')"/>
+        <input class="stylebutton" type="button" id="back" name="back" value="Zur&uuml;ck" onclick="location.assign('/')"/>
       </td>
     </tr>
   </table>

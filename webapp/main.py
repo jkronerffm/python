@@ -234,7 +234,7 @@ def doMisc():
     radioData = dictToObj.objFromJson(os.path.join(basedir, confdir, conffile))
     selectedImage = os.path.basename(radioData.background)
     imageData = loadImageToBase64(pathlib.Path(radioData.background).as_uri())
-    timeColor = radioData.timeColor if hasattr(radioData, "timeColor") else "#800000"
+    timeColor = radioData.timecolor if hasattr(radioData, "timecolor") else "#800000"
     return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor)
     
 basedir = "/var/radio/"
