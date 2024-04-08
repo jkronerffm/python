@@ -29,6 +29,9 @@ class RadioPlayer:
     def icon(self):
         return self._senderData['icon']
     
+    def timeColor(self):
+        return self._senderData['timecolor']
+        
     def readConfigFile(self, configFile):
         with open(configFile) as jsonFile:
             self._senderData = json.load(jsonFile)

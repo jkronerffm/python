@@ -13,6 +13,7 @@ import json
 import pygame
 import pigpio
 import dictToObj
+import hexcolors
 from ipc import StatusServer
 from ircontrol import ircontrol, ButtonState
 from ircontrol import LastPressed
@@ -393,21 +394,22 @@ def draw_clock():
     global screen
     global screenWidth, screenHeight
     global radioScheduler
-
+    global timeColor
+    
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
-    nrt = Fonts.font18.render(nextRunTimeDisplay, True, Colors.DARKRED)
+    nrt = Fonts.font18.render(nextRunTimeDisplay, True, timeColor)
     screen.blit(nrt, [0, 0])
     now = localtime()
     clock = strftime("%H:%M",now)
     cal = strftime("%d.%m.%Y", now)
-    time = Fonts.bigfont.render(clock, True, Colors.DARKRED)
+    time = Fonts.bigfont.render(clock, True, timeColor)
     width = time.get_width()
     height = time.get_height()
     x = (screenWidth - width) / 2
     y = (screenHeight - height) / 2
     screen.blit(time, [x,y])
-    calendar = Fonts.medfont.render(cal, True, Colors.DARKRED)
+    calendar = Fonts.medfont.render(cal, True, timeColor)
     width = calendar.get_width()
     x = (screenWidth - width) / 2
     y = y + height + 20
@@ -702,7 +704,7 @@ if __name__ == "__main__":
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     daemon = Daemon("pigpio")
     daemon.start()
-
+    
     pi = pigpio.pi()
     buttonState = ButtonState.Start(buttonDown, buttonPressed)
     irc = ircontrol(pi, 17, irCallback, buttonState = buttonState, timeout=5)
@@ -737,6 +739,8 @@ if __name__ == "__main__":
     confFilepathSound = os.path.join(rootDir, confDir, "sound.json")
     radioPlayer = RadioPlayer(confFilepathRadio)
     load_Settings()
+    hexCol = radioPlayer.timeColor()
+    timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
@@ -800,6 +804,7 @@ if __name__ == "__main__":
                     elif event.SettingsType == SettingsType.Radio:
                         changeRadio(event.Filepath)
                         loadBackgroundImage(radioPlayer.background())
+                        timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
