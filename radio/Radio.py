@@ -92,6 +92,7 @@ class Colors:
     WHITE=(255,255,255)
     BLACK = (0,0,0)
     RED = (255, 0, 0)
+    DARKRED = (128, 0, 0)
       
 class Fonts:
     font14 = pygame.font.SysFont('Arial', 14, True, False)
@@ -395,18 +396,18 @@ def draw_clock():
 
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
-    nrt = Fonts.font18.render(nextRunTimeDisplay, True, Colors.WHITE)
+    nrt = Fonts.font18.render(nextRunTimeDisplay, True, Colors.DARKRED)
     screen.blit(nrt, [0, 0])
     now = localtime()
     clock = strftime("%H:%M",now)
     cal = strftime("%d.%m.%Y", now)
-    time = Fonts.bigfont.render(clock, True, Colors.WHITE)
+    time = Fonts.bigfont.render(clock, True, Colors.DARKRED)
     width = time.get_width()
     height = time.get_height()
     x = (screenWidth - width) / 2
     y = (screenHeight - height) / 2
     screen.blit(time, [x,y])
-    calendar = Fonts.medfont.render(cal, True, Colors.WHITE)
+    calendar = Fonts.medfont.render(cal, True, Colors.DARKRED)
     width = calendar.get_width()
     x = (screenWidth - width) / 2
     y = y + height + 20
