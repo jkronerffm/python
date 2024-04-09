@@ -8,6 +8,7 @@ sys.path.append(os.path.join(basepath, "ircontrol"))
 sys.path.append(os.path.join(basepath, "ipc"))
 sys.path.append(os.path.join(basepath, "weather"))
 from LogFormatter import LogFormatter
+from xrandr import XRandr
 from os.path import isfile
 import json
 import pygame
@@ -39,6 +40,7 @@ from Options import Options, ArgumentError
 from common.Daemon import Daemon
 import cProfile, pstats, io
 import asyncio
+from Xlib.ext import randr
 
 pygame.init()
 
@@ -210,6 +212,15 @@ def check_click(pos):
 
     return True
 
+def switchBrightness(on = True):
+    xrandr = XRandr()
+    output = xrandr.getOutput()
+    
+    if on:
+        xrandr.setBrightness(output, 1.0)
+    else:
+        xrandr.setBrightness(output, 0.2)
+        
 def deactivate():
     global radioPlayer
     global currentsender
@@ -217,6 +228,7 @@ def deactivate():
     global active
     save_Settings(currentsender['name'], volume)
     active = False
+    switchBrightness(False)
     radioPlayer.stop()
     
 def activate():
@@ -224,10 +236,11 @@ def activate():
     global radioPlayer
     global currentsender
 
-    
     if active:
         deactivate()
         return True
+    
+    switchBrightness(True)
     active=True
     if currentsender != None:
         logging.debug(f"activate(currentsender={currentsender})")
@@ -772,7 +785,10 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "initStats.log")
         profiler = initProfiler()
-        
+
+    xrandr = XRandr()
+    output = xrandr.getOutput()
+    xrandr.setBrightness(output, 0.2)
 ## start main loop
     while running:
         try:
@@ -852,4 +868,5 @@ if __name__ == "__main__":
     daemon.kill()
     if options.profiling():
         saveStats(profiler, "loopStats.log")
+    switchBrightness(True)
     sys.exit()
