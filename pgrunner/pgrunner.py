@@ -34,36 +34,57 @@ class Orientation:
     RightCenter = 35
     Center = 51
     
-class PGScreen:
+class PGSurface:
     
     def __init__(self, width, height):
         self._width = width
         self._height = height
-        self.screen = pygame.display.set_mode((self._width, self._height))
-        logging.debug(f"PGSCreen(screen={self.screen})")
-        self._debugged = False
+        self._surface = self.getSurface()
+        logging.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
 
+    def getSurface(self):
+        return pygame.Surface(self.size())
+    
     def fill(self, color):
-        if not self._debugged:
-            logging.debug(f"PGSCreen.fill(screen={self.screen}, color={color})")
-            self._debugged = True
-        self.screen.fill(color)
+        self._surface.fill(color)
 
     def drawText(self, text, pos, fgColor, font, orientation):
         surface = font.render(text, True, fgColor)
         return surface
 
     def paint(self, surface, pos):
-        self.screen.blit(surface, pos)
+        self._surface.blit(surface, pos)
+
+    def size(self):
+        return (self._width, self._height)
+
+    def surface(self):
+        return self._surface
+    
+class PGScreen(PGSurface):
+    def __init__(self, width, height):
+        super().__init__(width, height)
+
+    def getSurface(self):
+        return pygame.display.set_mode(self.size())
+    
         
 class GraphObject:
-    def __init__(self, pos = (0,0), size=None, orientation = Orientation.TopLeft):
+    def __init__(self, pos = (0,0), size=None, orientation = Orientation.TopLeft, active = True):
         self._pos = pos
         self._size = size
         self._orientation = orientation
+        self._active = active
+        logging.debug(f"GraphObject.__init__(pos={self._pos}, size={self._size})")
 
-    def draw(self):
+    def isActive(self):
+        return self._active
+    
+    def update(self):
         pass
+    
+    def draw(self, screen):
+        pass            
 
     def _getPosAtOrientation(self):
         if (self._orientation & Orientation.HCenter) == Orientation.HCenter:
@@ -90,6 +111,7 @@ class GraphObject:
         height = surface.get_height()
         self._size = (width, height)
         x, y = self._getPosAtOrientation()
+#        logging.debug(f"GraphObject.paint(screen={screen}, surface={surface}, pos={(x,y)})")
         screen.paint(surface, [x, y])
         
     def setPos(self, pos):
@@ -104,6 +126,38 @@ class GraphObject:
     def size(self):
         return self._size
 
+    def width(self):
+        return self._size[0]
+
+    def height(self):
+        return self._size[1]
+
+class GraphObjectGroup(GraphObject):
+    def __init__(self, size, pos = (0,0), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True):
+        super().__init__(pos, size, orientation, active=active)
+        self._backgroundColor = backgroundColor
+        self._graphObjects = []
+        self._surface = PGSurface(self.width(), self.height())
+        logging.debug(f"GraphObjectGroup.__init__(pos={self._pos}, size={self._size})")
+        
+    def addGraphObject(self, graphObject):
+        self._graphObjects.append(graphObject)
+
+    def update(self):
+        if not self.isActive():
+            return
+        for graphObject in self._graphObjects:
+            graphObject.update()
+            
+    def draw(self, screen):
+        if not self.isActive():
+            return
+        
+        self._surface.fill(self._backgroundColor)
+        for graphObject in self._graphObjects:
+            graphObject.draw(self._surface)
+        super().paint(screen, self._surface.surface())
+        
 class Text(GraphObject):
     def __init__(self, text, pos = (0, 0), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
         super().__init__(pos)
@@ -237,7 +291,7 @@ if __name__ == "__main__":
         runner.addGraphObject(Text("hello world", (400, 200), font=Fonts.Arial64,orientation=Orientation.Center))
         runner.run()
     except Exception as e:
-        print(e)
+        logging.exception(f"caught exception: {e}")
     finally:
         pygame.quit()
         sys.exit()
