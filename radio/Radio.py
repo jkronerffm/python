@@ -41,6 +41,7 @@ from common.Daemon import Daemon
 import cProfile, pstats, io
 import asyncio
 from Xlib.ext import randr
+from Brightness import Brightness
 
 pygame.init()
 
@@ -212,35 +213,33 @@ def check_click(pos):
 
     return True
 
-def switchBrightness(on = True):
-    xrandr = XRandr()
-    output = xrandr.getOutput()
+def switchBrightness():
+    global brightness
     
-    if on:
-        xrandr.setBrightness(output, 1.0)
-    else:
-        xrandr.setBrightness(output, 0.2)
-        
+    brightness.toggle()
+                    
 def deactivate():
     global radioPlayer
     global currentsender
     global volume
     global active
+    global brightness
     save_Settings(currentsender['name'], volume)
     active = False
-    switchBrightness(False)
+    brightness.toggle()
     radioPlayer.stop()
     
 def activate():
     global active
     global radioPlayer
     global currentsender
-
+    global brightness
+    
     if active:
         deactivate()
         return True
     
-    switchBrightness(True)
+    brightness.toggle()
     active=True
     if currentsender != None:
         logging.debug(f"activate(currentsender={currentsender})")
@@ -452,12 +451,14 @@ def startHandler(job):
         
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
+    lightDisplay()
     active = True
 
 def stopHandler(job):
     global radioPlayer
     global active
     radioPlayer.stop()
+    switchBrightness()
     active = False
 
 def contHandler(job):
@@ -467,6 +468,7 @@ def contHandler(job):
     sendername = getSendernameFromJob(job) if haveInternet() else "my music"
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
+    switchBrightness()
     active=True
     
 def pauseRadio():
@@ -481,6 +483,7 @@ def pauseRadio():
     if contJob == None:
         return
     logging.debug(f"pauseRadio(contJob={contJob})")
+    switchBrightness
     radioPlayer.stop()
     active = False
     
@@ -712,7 +715,7 @@ if __name__ == "__main__":
     file_handler = RotatingFileHandler(logFilepath, maxBytes=4096, backupCount=5)
     file_handler.setFormatter(logFormatter)
     logger.addHandler(file_handler)
-    logger.debug("start radio")
+    logger.debug(f"start radio")
 ## initialize ircontrol
     ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
     daemon = Daemon("pigpio")
@@ -754,6 +757,7 @@ if __name__ == "__main__":
     load_Settings()
     hexCol = radioPlayer.timeColor()
     timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
+    brightness = Brightness(0.2,1.0)
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
@@ -786,9 +790,7 @@ if __name__ == "__main__":
         saveStats(profiler, "initStats.log")
         profiler = initProfiler()
 
-    xrandr = XRandr()
-    output = xrandr.getOutput()
-    xrandr.setBrightness(output, 0.2)
+    brightness.dim()
 ## start main loop
     while running:
         try:
@@ -821,6 +823,8 @@ if __name__ == "__main__":
                         changeRadio(event.Filepath)
                         loadBackgroundImage(radioPlayer.background())
                         timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
+                        newBrightness = radioPlayer.brightness()
+                        brightness.setDimValue(newBrightness)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
@@ -868,5 +872,5 @@ if __name__ == "__main__":
     daemon.kill()
     if options.profiling():
         saveStats(profiler, "loopStats.log")
-    switchBrightness(True)
+    switchBrightness()
     sys.exit()

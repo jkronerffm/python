@@ -20,6 +20,9 @@ class Options:
         self._statKey = "ncalls"
         self._size = None
 
+    def __str__(self):
+        return f"Options(debug={self.debug()}, fullscreen={self.fullscreen()}, profiling={self.profiling()}, statKey={self.statKey()}, size={self.size()})"
+    
     def debug(self):
         return self._debug
 
@@ -54,6 +57,7 @@ class Options:
     def getOptions(self,command, argv):
         opts, args = getopt.getopt(argv, Options.opts, Options.long_opts)
         for opt, arg in opts:
+            print(f"getOptions(opt={opt}, arg={arg})")
             if opt in ("-d", "--debug"):
                 self.setDebug()
             elif opt in ("-f", "--fullscreen"):

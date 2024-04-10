@@ -32,6 +32,9 @@ class RadioPlayer:
     def timeColor(self):
         return self._senderData['timecolor']
         
+    def brightness(self):
+        return int(self._senderData['brightness']) / 100
+        
     def readConfigFile(self, configFile):
         with open(configFile) as jsonFile:
             self._senderData = json.load(jsonFile)

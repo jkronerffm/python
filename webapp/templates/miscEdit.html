@@ -32,6 +32,13 @@
         <label for="timeColor">Farbe f&uuml;r Zeit</label>
       </td>
     </tr>
+    <tr>
+      <td>
+        <label for="brightness">Gedämmte Helligkeit:</label>
+        <input type="range" id="brightness" name="brightness" min="0" max="100" value="{{ brightness }}" oninput="this.nextElementSibling.value = this.value"/>
+        <output>{{ brightness }}</output>
+      </td>
+    </tr>
     <!--
     <tr>
       <td><label for="timeSize">Gr&ouml;&szlig;e</label></td>

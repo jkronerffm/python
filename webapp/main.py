@@ -235,7 +235,8 @@ def doMisc():
     selectedImage = os.path.basename(radioData.background)
     imageData = loadImageToBase64(pathlib.Path(radioData.background).as_uri())
     timeColor = radioData.timecolor if hasattr(radioData, "timecolor") else "#800000"
-    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor)
+    brightness = radioData.brightness if hasattr(radioData, "brightness") else "20"
+    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor,brightness=brightness)
     
 basedir = "/var/radio/"
 confdir = "conf"
@@ -261,8 +262,9 @@ def doSaveMisc():
     radioData = dictToObj.objFromJson(confFilepath)
     radioData.background= background["filepath"]
     timecolor = request.args.get("timecolor", "#800000")
-    
+    brightness = request.args.get("brightness", "20")
     radioData.timecolor = timecolor
+    radioData.brightness = brightness
     logging.debug(f"timecolor={timecolor}")
     dictToObj.objToJsonFile(radioData, confFilepath)
     return redirect("/radio")
