@@ -1,11 +1,12 @@
 import subprocess
 import logging
 
+
 class XRandr:
     def __init__(self):
         pass
 
-    def getOutput(self, excludeList = []):
+    def getName(self, excludeList = []):
         xrandr_process = subprocess.Popen(["xrandr", "-q"], stdout = subprocess.PIPE, text = True)
         grep_process = subprocess.Popen(["grep", "connected"], stdin = xrandr_process.stdout,
                                         stdout = subprocess.PIPE, text = True)
@@ -22,6 +23,9 @@ class XRandr:
                     break
         return display
 
+    def getOutput(self, excludeList = []):
+        return self.getName(excludeList)
+    
     def getBrightness(self, output):
         xrandr_process = subprocess.Popen(["xrandr", "--verbose"],
                                           stdout = subprocess.PIPE,
@@ -42,6 +46,17 @@ class XRandr:
 
         return brightness
 
+    def switch(self, output, on = True):
+        cmd = "--auto" if on else "--off"
+        sbr = subprocess.run(["xrandr", "--output", output, cmd], capture_output = True)
+        return sbr
+    
+    def switchOff(self, output):
+        return switch(output, False)
+    
+    def switchOn(self, output):
+        return switch(output, True)
+    
     def setBrightness(self, output, value):
         setBrightness = subprocess.run(["xrandr", "--output", output, "--brightness", str(value)], capture_output = True)
         return setBrightness
@@ -50,10 +65,18 @@ if __name__ == "__main__":
     import time
     logging.basicConfig(level=logging.DEBUG)
     xrandr = XRandr()
-    output = xrandr.getOutput()
-    print(output)
-    brightness = xrandr.getBrightness(output)
+    name = xrandr.getName()
+    print(name)
+    brightness = xrandr.getBrightness(name)
     print(brightness)
-    print(xrandr.setBrightness(output, 0.5))
+    print(xrandr.setBrightness(name, 0.5))
     time.sleep(3)
-    xrandr.setBrightness(output,brightness)
+    xrandr.setBrightness(name,brightness)
+    time.sleep(3)
+    print(xrandr.switchOff(name))
+    time.sleep(3)
+    print(xrandr.switchOn(name))
+    time.sleep(3)
+    print(xrandr.switch(name, True))
+    time.sleep(3)
+    print(xrandr.switch(name, False))
