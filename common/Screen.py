@@ -115,7 +115,21 @@ class Screen:
         self._xset.toggle(toggleTo)
         self._on = toggleTo
         return self.isOn()
-    
+
+    def on(self):
+        """
+        Turns on the screen
+        """
+
+        self._xset.on()
+
+    def off(self):
+        """
+        Turns off the screen.
+        """
+
+        self._xset.off()
+        
     def dim(self):
         """
         Dims the screen.

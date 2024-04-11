@@ -41,7 +41,8 @@ from common.Daemon import Daemon
 import cProfile, pstats, io
 import asyncio
 from Xlib.ext import randr
-from Brightness import Brightness
+from Screen import Screen
+from time import mktime
 
 pygame.init()
 
@@ -71,12 +72,13 @@ class IrKey:
     Down = 8
     Display = 9
     Weather = 10
+    Time = 11
     
     @staticmethod
     def FromButtonKey(buttonKey):
         KeyMapping = {
-            'power': IrKey.Unused,
-            'ok': IrKey.Power,
+            'power': IrKey.Power,
+            'ok': IrKey.Time,
             'vol+': IrKey.VolumeUp,
             'vol-': IrKey.VolumeDown,
             'up': IrKey.Up,
@@ -214,19 +216,24 @@ def check_click(pos):
     return True
 
 def switchBrightness():
-    global brightness
+    global screenDevice
     
-    brightness.toggle()
-                    
+    screenDevice.toggleBrightness()
+
+def switchScreen():
+    global screenDevice
+
+    screenDevice.toggle()
+    
 def deactivate():
     global radioPlayer
     global currentsender
     global volume
     global active
-    global brightness
+    
     save_Settings(currentsender['name'], volume)
     active = False
-    brightness.toggle()
+    switchBrightness()
     radioPlayer.stop()
     
 def activate():
@@ -238,8 +245,8 @@ def activate():
     if active:
         deactivate()
         return True
-    
-    brightness.toggle()
+
+    switchBrightness()
     active=True
     if currentsender != None:
         logging.debug(f"activate(currentsender={currentsender})")
@@ -402,19 +409,27 @@ def draw_radio():
     screen.blit(textRectVolume, (x+200-10, y - 30))
     draw_speaker(screen, (screenWidth - spkDistX, screenHeight - spkDistY), 10, (160, 0, 0,200))
 
+def todayAt(hour, minute=0, second=0, microsecond=0, now = None):
+    if now == None:
+        now = datetime.now()
+    return now.replace(hour=hour, minute = minute, second = second, microsecond = microsecond)
+
 def draw_clock():
     global screen
     global screenWidth, screenHeight
     global radioScheduler
     global timeColor
+    global screenDevice
     
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
     nrt = Fonts.font18.render(nextRunTimeDisplay, True, timeColor)
     screen.blit(nrt, [0, 0])
-    now = localtime()
-    clock = strftime("%H:%M",now)
-    cal = strftime("%d.%m.%Y", now)
+    now = datetime.fromtimestamp(mktime(localtime()))
+##    if screenDevice.isOn() and now > todayAt(15, now = now):
+##        screenDevice.off()
+    clock = now.strftime("%H:%M")
+    cal = now.strftime("%d.%m.%Y")
     time = Fonts.bigfont.render(clock, True, timeColor)
     width = time.get_width()
     height = time.get_height()
@@ -442,16 +457,21 @@ def startHandler(job):
     global radioPlayer
     global currentsender
     global active
+    global screenDevice
+    
     sendername = getSendernameFromJob(job) if haveInternet() else "my music"
     activeJob = job.id()
     logging.debug(f"startHandler(job={str(job)}, activeJob={activeJob})")
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
         (filepath, url) = say.say_time_with_greeting('de')
         radioPlayer.playUrl(url,True)
+
+    if not screenDevice.isOn():
+        screenDevice.on()
         
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
-    lightDisplay()
+    switchBrightness()
     active = True
 
 def stopHandler(job):
@@ -483,7 +503,7 @@ def pauseRadio():
     if contJob == None:
         return
     logging.debug(f"pauseRadio(contJob={contJob})")
-    switchBrightness
+    switchBrightness()
     radioPlayer.stop()
     active = False
     
@@ -757,7 +777,7 @@ if __name__ == "__main__":
     load_Settings()
     hexCol = radioPlayer.timeColor()
     timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
-    brightness = Brightness(0.2,1.0)
+    screenDevice = Screen()
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
@@ -790,7 +810,7 @@ if __name__ == "__main__":
         saveStats(profiler, "initStats.log")
         profiler = initProfiler()
 
-    brightness.dim()
+    screenDevice.dim()
 ## start main loop
     while running:
         try:
@@ -811,6 +831,9 @@ if __name__ == "__main__":
                         buttonDown=True
                     break;
                 elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
+                    if not screenDevice.isOn():
+                        screenDevice.on()
+                        pygame.time.set_timer(IrKey.Display, 3000)
                     if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
                         volume = get_VolumeValue(event.pos)
                     break;
@@ -824,7 +847,7 @@ if __name__ == "__main__":
                         loadBackgroundImage(radioPlayer.background())
                         timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
                         newBrightness = radioPlayer.brightness()
-                        brightness.setDimValue(newBrightness)
+                        screenDevice.setDimValue(newBrightness)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
@@ -847,6 +870,11 @@ if __name__ == "__main__":
                             logging.debug(f"IRControl-->Right: switch to next radio sender")
                             nextSender()
                         elif event.IrKey == IrKey.Display:
+                            if not screenDevice.isOn():
+                                screenDevice.on()
+                            else:
+                                screenDevice.off()
+                        elif event.IrKey == IrKey.Time:
                             sayTime()
                         elif event.IrKey == IrKey.Weather:
                             sayWeather()
@@ -873,4 +901,5 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     switchBrightness()
+    screenDevice.on()
     sys.exit()
