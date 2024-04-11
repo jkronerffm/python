@@ -1,21 +1,11 @@
-import sys
-import os
-
-basedir = os.path.dirname(os.getcwd())
-sys.path.append(os.path.join(basedir, "pgrunner"))
-
-from pgrunner import PGRunner, Colors, Orientation, Fonts, Text
-import logging
-import pygame
-
-from time import strftime, localtime
+from imports import *
 from Clock import Clock
 
 class Radio(PGRunner):
 
     def __init__(self):
-        super().__init__(800, 400, Colors.Black)
-        self.addGraphObject(Clock(size=(800, 400), pos = (0, 0)))
+        super().__init__(Size((800, 400)), Colors.Black)
+        self.addGraphObject(Clock(size=Size((800, 400)), pos = Point((0, 0))))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

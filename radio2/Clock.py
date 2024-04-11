@@ -1,17 +1,9 @@
-import sys
-import os
-
-basedir = os.path.dirname(os.getcwd())
-sys.path.append(os.path.join(basedir, "pgrunner"))
-
-from pgrunner import PGRunner, Colors, Orientation, Fonts, Text, GraphObjectGroup
-import logging
-import pygame
+from imports import *
 from time import localtime, strftime
 
 class Time(Text):
     def __init__(self):
-        super().__init__("", pos=(400, 200),font = Fonts.Arial128, orientation = Orientation.BottomCenter)
+        super().__init__("", pos=Point((400, 200)),font = Fonts.Arial128, orientation = Orientation.BottomCenter)
 
     def update(self):
         now = localtime()
@@ -19,12 +11,15 @@ class Time(Text):
         self._text = time
 
     def draw(self, surface):
-#        logging.debug(f"Time.draw(surface={surface})")
         super().draw(surface)
+
+    def onMouseDown(self, pos, button):
+        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}, button={button})")
+        return True
 
 class Date(Text):
     def __init__(self):
-        super().__init__("", pos=(400, 200), font = Fonts.Arial64, orientation = Orientation.TopCenter)
+        super().__init__("", pos=Point((400, 200)), font = Fonts.Arial64, orientation = Orientation.TopCenter)
 
     def update(self):
         now = localtime()
@@ -32,12 +27,16 @@ class Date(Text):
         self._text = date
 
     def draw(self, surface):
-#        logging.debug(f"Date.draw(surface={surface})")
         super().draw(surface)
 
 class Clock(GraphObjectGroup):
-    def __init__(self, size=(800, 400), pos = (0,0), orientation = Orientation.TopLeft, active=True):
+    def __init__(self, size=Size((800, 400)), pos = Point((0,0)), orientation = Orientation.TopLeft, active=True):
         logging.debug(f"Clock.__init__(size={size}, pos={pos})")
         super().__init__(pos=pos, size=size, orientation=orientation, backgroundColor = Colors.Black, active = active)
-        self.addGraphObject(Time())
         self.addGraphObject(Date())
+        self.addGraphObject(Time())
+
+    def onMouseDown(self, pos, button):
+        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}, button={button})")
+        return True
+        
