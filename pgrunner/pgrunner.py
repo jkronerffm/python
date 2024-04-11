@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import logging
+from graphs import *
 
 pygame.init()
 
@@ -36,9 +37,8 @@ class Orientation:
     
 class PGSurface:
     
-    def __init__(self, width, height):
-        self._width = width
-        self._height = height
+    def __init__(self, size : Size):
+        self._size = size
         self._surface = self.getSurface()
         logging.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
 
@@ -48,7 +48,7 @@ class PGSurface:
     def fill(self, color):
         self._surface.fill(color)
 
-    def drawText(self, text, pos, fgColor, font, orientation):
+    def drawText(self, text, fgColor, font):
         surface = font.render(text, True, fgColor)
         return surface
 
@@ -56,27 +56,29 @@ class PGSurface:
         self._surface.blit(surface, pos)
 
     def size(self):
-        return (self._width, self._height)
+        return tuple(self._size)
 
     def surface(self):
         return self._surface
     
 class PGScreen(PGSurface):
-    def __init__(self, width, height):
-        super().__init__(width, height)
+    def __init__(self, size : Size):
+        super().__init__(size)
 
     def getSurface(self):
         return pygame.display.set_mode(self.size())
-    
-        
+
 class GraphObject:
-    def __init__(self, pos = (0,0), size=None, orientation = Orientation.TopLeft, active = True):
+    def __init__(self, pos : Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True):
         self._pos = pos
         self._size = size
         self._orientation = orientation
         self._active = active
         logging.debug(f"GraphObject.__init__(pos={self._pos}, size={self._size})")
 
+    def isIn(self, pos : Point):
+        return Rect(self._pos, self._size).contains(pos)
+        
     def isActive(self):
         return self._active
     
@@ -86,69 +88,98 @@ class GraphObject:
     def draw(self, screen):
         pass            
 
+    def onMouseDown(self, pos, button):
+        return False
+
+    def onMouseUp(self, pos, button):
+        return False
+
+    def onMouseMove(self, pos):
+        return False
+        
+    def eventHandler(self, event):
+        result = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            result = self.onMouseDown(event.pos, event.button)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            result = self.onMouseUp(event.pos, event.button)
+        elif event.type == pygame.MOUSEMOTION:
+            result = self.onMouseMove(event.pos)
+
+        return result
+        
     def _getPosAtOrientation(self):
         if (self._orientation & Orientation.HCenter) == Orientation.HCenter:
-            x = self._pos[0] - self._size[0] / 2
+            x = self._pos.x() - self._size.width() / 2
         elif (self._orientation & Orientation.Left) == Orientation.Left:
-            x = self._pos[0]
+            x = self._pos.x()
         elif (self._orientation & Orientation.Right) == Orientation.Right:
-            x = self._pos[0] - self._size[0]
+            x = self._pos.x() - self._size.width()
         else:
-            x = self._pos[0]
+            x = self._pos.x()
         if (self._orientation & Orientation.VCenter) == Orientation.VCenter:
-            y = self._pos[1] - self._size[1]/2
+            y = self._pos.y() - self.height()/2
         elif (self._orientation & Orientation.Top) == Orientation.Top:
-            y = self._pos[1]
+            y = self._pos.y()
         elif (self._orientation & Orientation.Bottom) == Orientation.Bottom:
-            y = self._pos[1] - self._size[1]
+            y = self._pos.y() - self._size.height()
         else:
-            y = self._pos[1]
+            y = self._pos.y()
 
         return x, y
         
     def paint(self, screen, surface):
         width = surface.get_width()
         height = surface.get_height()
-        self._size = (width, height)
+        self._size = Size((width, height))
         x, y = self._getPosAtOrientation()
-#        logging.debug(f"GraphObject.paint(screen={screen}, surface={surface}, pos={(x,y)})")
         screen.paint(surface, [x, y])
         
     def setPos(self, pos):
         self._pos = pos
 
+    def left(self):
+        return self._pos.x()
+
+    def top(self):
+        return self._pos.y()
+
+    def right(self):
+        return self.left() + self.width()
+
+    def bottom(self):
+        return self.top() + self.height()
+    
     def pos(self):
         return self._pos
 
-    def setSize(self, size):
+    def setSize(self, size : Size):
         self._size = size
         
     def size(self):
         return self._size
 
     def width(self):
-        return self._size[0]
+        return self._size.width()
 
     def height(self):
-        return self._size[1]
+        return self._size.height()
+
+    def rect(self):
+        x,y = self._getPosAtOrientation()
+        return Rect(Point((x,y)), self._size)
 
 class GraphObjectGroup(GraphObject):
-    def __init__(self, size, pos = (0,0), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True):
+    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True):
         super().__init__(pos, size, orientation, active=active)
         self._backgroundColor = backgroundColor
         self._graphObjects = []
-        self._surface = PGSurface(self.width(), self.height())
+        self._surface = PGSurface(self.size())
         logging.debug(f"GraphObjectGroup.__init__(pos={self._pos}, size={self._size})")
         
     def addGraphObject(self, graphObject):
         self._graphObjects.append(graphObject)
 
-    def update(self):
-        if not self.isActive():
-            return
-        for graphObject in self._graphObjects:
-            graphObject.update()
-            
     def draw(self, screen):
         if not self.isActive():
             return
@@ -157,9 +188,29 @@ class GraphObjectGroup(GraphObject):
         for graphObject in self._graphObjects:
             graphObject.draw(self._surface)
         super().paint(screen, self._surface.surface())
+
+    def eventHandler(self, event):
+        handled = False
+        for graphObject in self._graphObjects:
+            if graphObject.rect().contains(Point(event.pos)):
+                handled = graphObject.eventHandler(event)
+            if handled:
+                break
+
+        if not handled:
+            handled = super().eventHandler(event)
+            
+        return handled
+    
+    def update(self):
+        if not self.isActive():
+            return
+        for graphObject in self._graphObjects:
+            graphObject.update()
+            
         
 class Text(GraphObject):
-    def __init__(self, text, pos = (0, 0), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
+    def __init__(self, text, pos = Point((0, 0)), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
         super().__init__(pos)
         self._text = text
         self._font = font
@@ -170,7 +221,7 @@ class Text(GraphObject):
         pass
     
     def draw(self, screen):
-        surface = screen.drawText(self._text, self._pos, self._color, self._font, self._orientation)
+        surface = screen.drawText(self._text, self._color, self._font)
         super().paint(screen, surface)
         
 class Sprite:
@@ -204,10 +255,9 @@ class Sprite:
         return self._pos[1]
 
 class PGRunner:
-    def __init__(self, width, height, backgroundColor = Colors.Black):
-        self._width = width
-        self._height = height
-        self._screen = PGScreen(width, height)
+    def __init__(self, size : Size, backgroundColor = Colors.Black):
+        self._size = size
+        self._screen = PGScreen(self._size)
         self._running = False
         self._backgroundColor = backgroundColor
         self._clock = pygame.time.Clock()
@@ -244,8 +294,19 @@ class PGRunner:
 
     def onMouseMove(self, pos):
         pass
-    
+
+    def handlePosEvent(self, event):
+        for graphObject in self._graphObjects:
+            if graphObject.rect().contains(Point(event.pos)):
+                if graphObject.eventHandler(event):
+                    return True
+        return False
+        
     def eventHandler(self, event):
+        handled = self.handlePosEvent(event) if hasattr(event, "pos") else False
+        if handled:
+            return True
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.onMouseDown(event.pos, event.button)
             return True
@@ -287,8 +348,8 @@ class PGRunner:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     try:
-        runner = PGRunner(800, 400, Colors.LightBlue)
-        runner.addGraphObject(Text("hello world", (400, 200), font=Fonts.Arial64,orientation=Orientation.Center))
+        runner = PGRunner(Size((800, 400)), Colors.LightBlue)
+        runner.addGraphObject(Text("hello world", Point((400, 200)), font=Fonts.Arial64,orientation=Orientation.Center))
         runner.run()
     except Exception as e:
         logging.exception(f"caught exception: {e}")
