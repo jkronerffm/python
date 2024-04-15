@@ -2,7 +2,7 @@ from xrandr import XRandr
 from XSet import XSet
 import logging
 
-class Screen:
+class Monitor:
     """
     The class Screen supports some functions on Screen.
 
@@ -24,7 +24,7 @@ class Screen:
     
     """
     
-    def __init__(self):
+    def __init__(self, delay=0.1):
         """
         Initializes the Screen object. To perform functions on Screen it
         generates objects of type XRandr and XSet. To perform operations
@@ -36,11 +36,11 @@ class Screen:
         
         logging.debug(f"{self.__class__.__name__}.__init__()")
         self._xrandr = XRandr()
-        self._xset = XSet()
+        self._xset = XSet(delay=delay)
         self._name = self._xrandr.getOutput()
         self._dimValue = 0.2
         self._lightValue = 1.0
-        self._on = True
+        self._on = self._xset.getMonitorState().casefold() == "on".casefold()
         self._currentValue = self._xrandr.getBrightness(self._name)
 
     def name(self):
@@ -110,8 +110,9 @@ class Screen:
         """
         Toggles the screen between on and off
         """
-        
+
         toggleTo = not self.isOn()
+        logging.debug(f"{self.__class__.__name__}.toggle(toggleTo={toggleTo})")
         self._xset.toggle(toggleTo)
         self._on = toggleTo
         return self.isOn()
@@ -121,14 +122,18 @@ class Screen:
         Turns on the screen
         """
 
+        logging.debug(f"{self.__class__.__name__}.on()")
         self._xset.on()
+        self._on = True
 
     def off(self):
         """
         Turns off the screen.
         """
 
+        logging.debug(f"{self.__class__.__name__}.off()")
         self._xset.off()
+        self._on = False
         
     def dim(self):
         """
@@ -150,9 +155,27 @@ if __name__ == "__main__":
     
     screen = Screen()
 
-    for task in [lambda s: s.toggleBrightness(),
-                 lambda s: s.toggleBrightness(),
-                 lambda s: s.toggle(),
-                 lambda s: s.toggle()]:
-        task(screen)
-        time.sleep(3)
+    for task in [{'delay': 0,
+                  'display': 'isOn',
+                  'cmd': lambda s: s.isOn()
+                  },
+                 {'delay': 1,
+                  'display': 'toggleBrightness',
+                  'cmd': lambda s: s.toggleBrightness()
+                  },
+                 {'delay': 1,
+                  'display': 'toggleBrightness',
+                  'cmd': lambda s: s.toggleBrightness()
+                  },
+                 {'delay': 5,
+                  'display': 'toggle',
+                  'cmd': lambda s: s.toggle()
+                  },
+                 {'delay': 0,
+                  'display': 'toggle',
+                  'cmd': lambda s: s.toggle()
+                  }
+                 ]:
+        print(f"{task['display']} ==> {task['cmd'](screen)}")
+
+        time.sleep(task['delay'])
