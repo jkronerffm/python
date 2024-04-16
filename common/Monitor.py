@@ -1,6 +1,19 @@
+import multiprocessing
+from multiprocessing.connection import Listener
+from multiprocessing.connection import Client
+from socket import *
+from threading import Thread, Lock
 from xrandr import XRandr
 from XSet import XSet
 import logging
+import inspect
+import dictToObj
+import secrets
+import sys
+import os
+import time
+import getopt
+from AnsiColors import Color, BGColor, Colors
 
 class Monitor:
     """
@@ -40,7 +53,7 @@ class Monitor:
         self._name = self._xrandr.getOutput()
         self._dimValue = 0.2
         self._lightValue = 1.0
-        self._on = self._xset.getMonitorState().casefold() == "on".casefold()
+        self._on = self.getState()
         self._currentValue = self._xrandr.getBrightness(self._name)
 
     def name(self):
@@ -148,34 +161,186 @@ class Monitor:
         
         self.setCurrentValue(self._lightValue)
 
+    def getState(self):
+        return self._xset.getMonitorState().casefold() == "on".casefold()
+
+class ClientServer:
+    Port = 6100
+    Timeout = 3
+    VarPath = "/var/radio"
+    ConfDir = "conf"
+    Filename = "monitor.json"
+    
+    def __init__(self, fgColor, bgColor):
+        clr = Colors()
+        self._color = clr(fgColor, bgColor)
+
+    def debug(self, msg):
+        logging.debug(self._color + msg + Colors.Reset)
+
+    def GetConfPath():
+        confFilepath = os.path.join(ClientServer.VarPath, ClientServer.ConfDir, ClientServer.Filename)
+        return confFilepath
+
+    def GetConfig():
+        return dictToObj.objFromJson(ClientServer.GetConfPath())
+    
+class Server(ClientServer):
+    def __init__(self, timeout=ClientServer.Timeout):
+        super().__init__(Color.Black, BGColor.Green)
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        monitorConf = self.__class__.GetConfig()
+        self._port = monitorConf.port
+        address = ('localhost', self._port)
+        self._listener = Listener(address, authkey=bytes(monitorConf.authkey, "utf-8"))
+        self._listener._listener._socket.settimeout(timeout)
+        self._running = False
+
+    def isRunning(self):
+        return self._running
+
+    def onMessageOn(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._monitor.on()
+
+    def onMessageOff(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._monitor.off()
+
+    def onMessageStatus(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        state = self._monitor.getState()
+        return state
+
+    def performMessages(self, connection):
+        connected = True
+        while connected:
+            msg = connection.recv()
+            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(msg={msg})")
+            if msg == "0" or len(msg) == 0:
+                super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): connection has been closed by client")
+                connected = False
+                continue
+            result = self.handleMessage(msg)
+            if result != None:
+                connection.send(str(result))
+        
+    def handleClient(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        try:
+            with self._listener.accept() as connection:
+                super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): client is connected")
+                self.performMessages(connection)
+        except EOFError:
+               super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): connection closed by client!")
+##        except timeout:
+##            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): no connection. Continue...")
+        except Exception as e:
+            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(e=(typename={type(e).__name__},classname={e.__class__.__name__}, qualname={e.__class__.__qualname__})): error occured")
+            
+    def handleMessage(self, msg):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(msg={msg})")
+        if msg == "on":
+            return self.onMessageOn()
+        elif msg == "off":
+            return self.onMessageOff()
+        elif msg == "state":
+            return self.onMessageStatus()
+        
+    def run(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._monitor = Monitor()
+        self._running = True
+        while self.isRunning():
+            time.sleep(1)
+            self.handleClient()
+
+    def stop(self):
+        self._running=False
+        
+class Client(ClientServer):
+    def __init__(self):
+        super().__init__(Color.Black, BGColor.Red)
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        monitorConf = self.__class__.GetConfig()
+        self._port = monitorConf.port
+        address = ('localhost', self._port)
+        self._client = multiprocessing.connection.Client(address, authkey = bytes(monitorConf.authkey,'utf-8'))
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(client={self._client})")
+
+    def __del__(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._client.close()
+    
+    def on(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._client.send("on")
+
+    def off(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._client.send("off")
+
+    def status(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        self._client.send("state")
+        response = self._client.recv()
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(response={response})")
+        return response
+    
+    def isOn(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        status = self.status()
+        value = status != None and status in ["true", "True", "yes", "1", "on", "On"]
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(status={status}) --> {value}")
+        return value
+
+    def toggle(self):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        if self.isOn():
+            self.off()
+        else:
+            self.on()
+
+    def switch(self, on):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(on={on})")
+        if not on and self.isOn():
+            self.off()
+        elif on and not self.isOn():
+            self.on()
+
+def createAuthKey(renew = False):
+    monitorConf = dictToObj.objFromJson(ClientServer.GetConfPath())
+    logging.debug(f"{inspect.stack()[0][3]}(monitorConf={monitorConf})")
+    if not hasattr(monitorConf, "authkey") or renew:
+        authKey = secrets.token_urlsafe(16)
+        monitorConf.authkey = authKey
+
+    if not hasattr(monitorConf, "port"):
+        monitorConf.port = Server.Port
+        
+    dictToObj.objToJsonFile(monitorConf, Server.GetConfPath())
+    
 if __name__ == "__main__":
     import time
 
-    logging.basicConfig(level=logging.DEBUG)
-    
-    screen = Screen()
+    opts, args = getopt.getopt(sys.argv[1:], "dt:", ["debug", "timeout="])
+    debugging = False
+    timeout = ClientServer.Timeout
+    for opt,arg in opts:
+        print(opt, arg)
+        if opt in ('-d', '--debug'):
+            debugging = True
+        elif opt in ('-t', '--timeout'):
+            timeout = int(arg)
 
-    for task in [{'delay': 0,
-                  'display': 'isOn',
-                  'cmd': lambda s: s.isOn()
-                  },
-                 {'delay': 1,
-                  'display': 'toggleBrightness',
-                  'cmd': lambda s: s.toggleBrightness()
-                  },
-                 {'delay': 1,
-                  'display': 'toggleBrightness',
-                  'cmd': lambda s: s.toggleBrightness()
-                  },
-                 {'delay': 5,
-                  'display': 'toggle',
-                  'cmd': lambda s: s.toggle()
-                  },
-                 {'delay': 0,
-                  'display': 'toggle',
-                  'cmd': lambda s: s.toggle()
-                  }
-                 ]:
-        print(f"{task['display']} ==> {task['cmd'](screen)}")
+    level = logging.DEBUG if debugging else logging.FATAL
+    logging.basicConfig(level=level)
+    createAuthKey()
 
-        time.sleep(task['delay'])
+    logging.debug("start server...")
+    server = Server(timeout)
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        logging.debug("Stop the server...")
+        server.stop()
