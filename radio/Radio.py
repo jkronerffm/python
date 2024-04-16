@@ -41,7 +41,7 @@ from common.Daemon import Daemon
 import cProfile, pstats, io
 import asyncio
 from Xlib.ext import randr
-from Screen import Screen
+import Monitor
 from time import mktime
 
 pygame.init()
@@ -216,14 +216,14 @@ def check_click(pos):
     return True
 
 def switchBrightness():
-    global screenDevice
+    global monitor
     
-    screenDevice.toggleBrightness()
+    monitor.toggleBrightness()
 
 def switchScreen():
-    global screenDevice
+    global monitor
 
-    screenDevice.toggle()
+    monitor.toggle()
     
 def deactivate():
     global radioPlayer
@@ -419,15 +419,12 @@ def draw_clock():
     global screenWidth, screenHeight
     global radioScheduler
     global timeColor
-    global screenDevice
     
     nextRunTime = radioScheduler.nextRunTime()
     nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
     nrt = Fonts.font18.render(nextRunTimeDisplay, True, timeColor)
     screen.blit(nrt, [0, 0])
     now = datetime.fromtimestamp(mktime(localtime()))
-##    if screenDevice.isOn() and now > todayAt(15, now = now):
-##        screenDevice.off()
     clock = now.strftime("%H:%M")
     cal = now.strftime("%d.%m.%Y")
     time = Fonts.bigfont.render(clock, True, timeColor)
@@ -452,12 +449,18 @@ def jobHandler(job):
     elif job.name().startswith('cont'):
         contHandler(job)
 
-       
+def switchMonitor(on):
+    monitorClient = Monitor.Client()
+    monitorClient.switch(on)
+
+def toggleMonitor():
+    monitorClient = Monitor.Client()
+    monitorClient.toggle()
+
 def startHandler(job):
     global radioPlayer
     global currentsender
     global active
-    global screenDevice
     
     sendername = getSendernameFromJob(job) if haveInternet() else "my music"
     activeJob = job.id()
@@ -466,9 +469,8 @@ def startHandler(job):
         (filepath, url) = say.say_time_with_greeting('de')
         radioPlayer.playUrl(url,True)
 
-    if not screenDevice.isOn():
-        screenDevice.on()
-        
+    switchMonitor(True)
+    
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
     switchBrightness()
@@ -766,7 +768,9 @@ if __name__ == "__main__":
     volume = 0
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
     focusOnVolumeSettings = False
-
+## enable screensaver
+    pygame.display.set_allow_screensaver(True)
+    
 ## initialize pathnames
     rootDir = "/var/radio"
     confDir = "conf"
@@ -777,7 +781,7 @@ if __name__ == "__main__":
     load_Settings()
     hexCol = radioPlayer.timeColor()
     timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
-    screenDevice = Screen()
+    monitor = Monitor.Monitor(delay=5.0)
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
@@ -810,7 +814,7 @@ if __name__ == "__main__":
         saveStats(profiler, "initStats.log")
         profiler = initProfiler()
 
-    screenDevice.dim()
+    monitor.dim()
 ## start main loop
     while running:
         try:
@@ -831,9 +835,6 @@ if __name__ == "__main__":
                         buttonDown=True
                     break;
                 elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
-                    if not screenDevice.isOn():
-                        screenDevice.on()
-                        pygame.time.set_timer(IrKey.Display, 3000)
                     if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
                         volume = get_VolumeValue(event.pos)
                     break;
@@ -847,7 +848,7 @@ if __name__ == "__main__":
                         loadBackgroundImage(radioPlayer.background())
                         timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
                         newBrightness = radioPlayer.brightness()
-                        screenDevice.setDimValue(newBrightness)
+                        monitor.setDimValue(newBrightness)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
@@ -870,10 +871,9 @@ if __name__ == "__main__":
                             logging.debug(f"IRControl-->Right: switch to next radio sender")
                             nextSender()
                         elif event.IrKey == IrKey.Display:
-                            if not screenDevice.isOn():
-                                screenDevice.on()
-                            else:
-                                screenDevice.off()
+                            logging.debug(f"IRControl-->Display: switch screen on/off")
+                            if not active:
+                                toggleMonitor()
                         elif event.IrKey == IrKey.Time:
                             sayTime()
                         elif event.IrKey == IrKey.Weather:
@@ -885,7 +885,6 @@ if __name__ == "__main__":
                         elif event.IrKey == IrKey.VolumeDown and active:
                             logging.debug(f"IRControl-->VolumeDown: decrease volume")
                             toggleVolume(False)
-                        
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:
@@ -900,6 +899,6 @@ if __name__ == "__main__":
     daemon.kill()
     if options.profiling():
         saveStats(profiler, "loopStats.log")
-    switchBrightness()
-    screenDevice.on()
+    monitor.light()
+    switchMonitor(on = True)
     sys.exit()

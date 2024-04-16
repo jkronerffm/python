@@ -57,7 +57,6 @@ class Options:
     def getOptions(self,command, argv):
         opts, args = getopt.getopt(argv, Options.opts, Options.long_opts)
         for opt, arg in opts:
-            print(f"getOptions(opt={opt}, arg={arg})")
             if opt in ("-d", "--debug"):
                 self.setDebug()
             elif opt in ("-f", "--fullscreen"):
