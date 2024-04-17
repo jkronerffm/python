@@ -35,12 +35,19 @@ class Orientation:
     RightCenter = 35
     Center = 51
     
-class PGSurface:
+class GraphBase:
+    def debug(self, msg, **kwargs):
+        classname = kwargs['classname'] if 'classname' in kwargs else self.__class__.__name__
+        condition = kwargs['condition'] if 'condition' in kwargs else True
+        if condition:
+            logging.debug(f"{classname}.{inspect.stack()[1][3]}{msg}")
+            
+class PGSurface(GraphBase):
     
     def __init__(self, size : Size):
         self._size = size
         self._surface = self.getSurface()
-        logging.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
+        self.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
 
     def getSurface(self):
         return pygame.Surface(self.size())
@@ -68,14 +75,21 @@ class PGScreen(PGSurface):
     def getSurface(self):
         return pygame.display.set_mode(self.size())
 
-class GraphObject:
-    def __init__(self, pos : Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True):
+class GraphObject(GraphBase):
+    def __init__(self, pos : Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True, parent=None):
         self._pos = pos
+        self._parent = parent
         self._size = size
         self._orientation = orientation
         self._active = active
-        logging.debug(f"GraphObject.__init__(pos={self._pos}, size={self._size})")
+        self.debug(f"(pos={self._pos}, size={self._size})", classname="GraphObject")
 
+    def parent(self):
+        return self._parent
+
+    def setParent(self, value):
+        self._parent = parent
+        
     def isIn(self, pos : Point):
         return Rect(self._pos, self._size).contains(pos)
         
@@ -98,6 +112,7 @@ class GraphObject:
         return False
         
     def eventHandler(self, event):
+        localPos = self.parent().rect().surfaceToRect(Point(event.pos)) if self.parent() != None else Point(event.pos)
         result = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             result = self.onMouseDown(event.pos, event.button)
@@ -110,11 +125,11 @@ class GraphObject:
         
     def _getPosAtOrientation(self):
         if (self._orientation & Orientation.HCenter) == Orientation.HCenter:
-            x = self._pos.x() - self._size.width() / 2
+            x = self._pos.x() - self.width() / 2
         elif (self._orientation & Orientation.Left) == Orientation.Left:
             x = self._pos.x()
         elif (self._orientation & Orientation.Right) == Orientation.Right:
-            x = self._pos.x() - self._size.width()
+            x = self._pos.x() - self.width()
         else:
             x = self._pos.x()
         if (self._orientation & Orientation.VCenter) == Orientation.VCenter:
@@ -122,7 +137,7 @@ class GraphObject:
         elif (self._orientation & Orientation.Top) == Orientation.Top:
             y = self._pos.y()
         elif (self._orientation & Orientation.Bottom) == Orientation.Bottom:
-            y = self._pos.y() - self._size.height()
+            y = self._pos.y() - self.height()
         else:
             y = self._pos.y()
 
@@ -160,22 +175,22 @@ class GraphObject:
         return self._size
 
     def width(self):
-        return self._size.width()
+        return self._size.width() if self._size != None else 0
 
     def height(self):
-        return self._size.height()
+        return self._size.height() if self._size != None else 0
 
     def rect(self):
         x,y = self._getPosAtOrientation()
         return Rect(Point((x,y)), self._size)
 
 class GraphObjectGroup(GraphObject):
-    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True):
-        super().__init__(pos, size, orientation, active=active)
+    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True, parent = None):
+        super().__init__(pos, size, orientation, active=active, parent = parent)
         self._backgroundColor = backgroundColor
         self._graphObjects = []
         self._surface = PGSurface(self.size())
-        logging.debug(f"GraphObjectGroup.__init__(pos={self._pos}, size={self._size})")
+        self.debug(f"(pos={self._pos}, size={self._size})")
         
     def addGraphObject(self, graphObject):
         self._graphObjects.append(graphObject)
@@ -191,8 +206,11 @@ class GraphObjectGroup(GraphObject):
 
     def eventHandler(self, event):
         handled = False
+        localPos = self.rect().surfaceToRect(Point(event.pos))
         for graphObject in self._graphObjects:
-            if graphObject.rect().contains(Point(event.pos)):
+            if graphObject.size() == None:
+                continue
+            if graphObject.rect().contains(localPos):
                 handled = graphObject.eventHandler(event)
             if handled:
                 break
@@ -224,7 +242,7 @@ class Text(GraphObject):
         surface = screen.drawText(self._text, self._color, self._font)
         super().paint(screen, surface)
         
-class Sprite:
+class Sprite(GraphObject):
     def __init__(self, imagepath, pos = (0, 0), size = None):
         self._pos = pos
         self._size = size
@@ -254,9 +272,9 @@ class Sprite:
     def top(self):
         return self._pos[1]
 
-class PGRunner:
+class PGRunner(GraphObject):
     def __init__(self, size : Size, backgroundColor = Colors.Black):
-        self._size = size
+        super().__init__(size = size, pos = Point((0,0)), parent = self)
         self._screen = PGScreen(self._size)
         self._running = False
         self._backgroundColor = backgroundColor
@@ -269,11 +287,11 @@ class PGRunner:
         self._eventHandler.append(eventHandler)
 
     def addGraphObject(self, graphObject):
-        logging.debug(f"PGRunner.addGraphObject(graphObject={graphObject})")
+        self.debug(f"(graphObject={graphObject})")
         self._graphObjects.append(graphObject)
         
     def setBackgroundColor(self, value):
-        logging.debug(f"setBackgroundColor(value={value}")
+        self.debug(f"(value={value}")
         self._backgroundColor = value
 
     def backgroundColor(self):
@@ -289,7 +307,7 @@ class PGRunner:
         self.set_running(False)
 
     def onMouseDown(self, pos, button):
-        logging.debug(f"onMouseDown(pos={pos},button={button})")
+        self.debug(f"(pos={pos},button={button})")
         pass
 
     def onMouseMove(self, pos):
@@ -333,7 +351,7 @@ class PGRunner:
             
     def run(self):
         self.set_running()
-        logging.debug("PGRunner.run() enter")
+        self.debug("() enter")
         while self.running():
             try:
                 self.handleEvents()
@@ -343,7 +361,7 @@ class PGRunner:
                 self._clock.tick(60)
             except KeyboardInterrupt:
                 self.set_running(False)
-        logging.debug("PGRunner.run() leave")
+        self.debug("() leave")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
