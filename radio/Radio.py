@@ -9,7 +9,9 @@ sys.path.append(os.path.join(basepath, "ipc"))
 sys.path.append(os.path.join(basepath, "weather"))
 from LogFormatter import LogFormatter
 from xrandr import XRandr
+from SimpleScheduler import SimpleScheduler
 from os.path import isfile
+import schedule
 import json
 import pygame
 import pigpio
@@ -22,7 +24,7 @@ from WeatherCalculator import WeatherCalculator as Weatherman
 from area import Area
 from pygame.event import Event
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import strftime, localtime
 from ctypes import cast, POINTER
 from RadioPlayer import *
@@ -449,14 +451,79 @@ def jobHandler(job):
     elif job.name().startswith('cont'):
         contHandler(job)
 
+def monitorOffAgain():
+    monitorClient = Monitor.Client.GetInstance()
+    if monitorClient.isOn():
+        monitorClient.off()
+        enableScreenSaver()
+    schedule.clear('off_again')
+
 def switchMonitor(on):
-    monitorClient = Monitor.Client()
+    monitorClient = Monitor.Client.GetInstance()
     monitorClient.switch(on)
+    enableScreenSaver(not on)
 
+def enableScreenSaver(enable = True):
+## enable screensaver
+    pygame.display.set_allow_screensaver(enable)
+    
 def toggleMonitor():
-    monitorClient = Monitor.Client()
-    monitorClient.toggle()
+    global monitorScheduler
+    global monitorOffByScheduler
+    try:
+        logging.debug(f"toggleMonitor(monitorScheduler={monitorScheduler})")
+        monitorClient = Monitor.Client.GetInstance()
+        logging.debug("toggleMonitor(): {monitorClient} was created")
+        toggled = monitorClient.toggle()
+        enableScreenSaver(not toggled)
+        logging.debug(f"toggleMonitor(toggled={toggled}, monitorOffByScheduler={monitorOffByScheduler})")
+        if toggled and monitorOffByScheduler:
+            monitorScheduler.addJob((schedule.every(5).seconds.tag('off_again'), "off_again"))
+            monitorScheduler.addActionCallback("off_again", monitorOffAgain)
+    except Exception as e:
+        logging.exception(e)
+        
+def monitorOnCallback():
+    global monitorOffByScheduler
+    logging.debug("monitorOnCallback()")
+    monitorClient = Monitor.Client.GetInstance()
+    if not monitorClient.isOn():
+        monitorClient.on()
+        enableScreenSaver(False)
+    monitorOffByScheduler = False
 
+def monitorOffCallback():
+    global monitorOffByScheduler
+    logging.debug("monitorOffCallback()")
+    monitorClient = Monitor.Client.GetInstance()
+    if monitorClient.isOn():
+        monitorClient.off()
+        enableScreenSaver()
+    monitorOffByScheduler = True
+    
+def initMonitorScheduler(monitorScheduler):
+    logging.debug("initMonitorScheduler()")
+    monitorClient = Monitor.Client.GetInstance()
+    logging.debug(f"initMonitorScheduler(offTime={monitorClient.getOffTime()}, onTime={monitorClient.getOnTime()})")
+    if monitorClient.getOffTime() == "" or monitorClient.getOnTime() == "":
+        return
+    
+    if monitorClient.getOffTime() == "test" or monitorClient.getOnTime == "test":
+        now = datetime.now()
+        tdOff = timedelta(minutes=1)
+        tdOn = timedelta(minutes=4)
+        offTime = (now + tdOff).strftime("%H:%M")
+        onTime = (now + tdOn).strftime("%H:%M")
+    else:
+        offTime = monitorClient.getOffTime()
+        onTime = monitorClient.getOnTime()
+    offJob = monitorScheduler.addJob((schedule.every().day.at(offTime), "off"))
+    onJob = monitorScheduler.addJob((schedule.every().day.at(onTime), "on"))
+    logging.debug(f"initMonitorScheduler(offJob={offJob}, onJob={onJob})")
+    monitorScheduler.addActionCallback("off", monitorOffCallback)
+    monitorScheduler.addActionCallback("on", monitorOnCallback)
+    monitorScheduler.start()
+    
 def startHandler(job):
     global radioPlayer
     global currentsender
@@ -768,8 +835,6 @@ if __name__ == "__main__":
     volume = 0
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
     focusOnVolumeSettings = False
-## enable screensaver
-    pygame.display.set_allow_screensaver(True)
     
 ## initialize pathnames
     rootDir = "/var/radio"
@@ -815,6 +880,10 @@ if __name__ == "__main__":
         profiler = initProfiler()
 
     monitor.dim()
+## start SimpleScheduler for Monitor
+    monitorOffByScheduler = False
+    monitorScheduler = SimpleScheduler()
+    initMonitorScheduler(monitorScheduler)
 ## start main loop
     while running:
         try:
@@ -892,6 +961,7 @@ if __name__ == "__main__":
             pygame.event.post(event)
             continue
     logging.debug("exit the pygame app")
+    switchMonitor(on = True)
     pygame.quit()
     radioPlayer.stop()
     radioScheduler.shutdown()
@@ -900,5 +970,5 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     monitor.light()
-    switchMonitor(on = True)
+    monitorScheduler.stop()
     sys.exit()

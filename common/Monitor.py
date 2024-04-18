@@ -6,8 +6,10 @@ from threading import Thread, Lock
 from xrandr import XRandr
 from XSet import XSet
 import logging
+from logging import handlers
 import inspect
 import dictToObj
+from LogFormatter import LogFormatter
 import secrets
 import sys
 import os
@@ -138,6 +140,7 @@ class Monitor:
         logging.debug(f"{self.__class__.__name__}.on()")
         self._xset.on()
         self._on = True
+        return True
 
     def off(self):
         """
@@ -147,6 +150,7 @@ class Monitor:
         logging.debug(f"{self.__class__.__name__}.off()")
         self._xset.off()
         self._on = False
+        return False
         
     def dim(self):
         """
@@ -201,11 +205,11 @@ class Server(ClientServer):
 
     def onMessageOn(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._monitor.on()
+        return self._monitor.on()
 
     def onMessageOff(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._monitor.off()
+        return self._monitor.off()
 
     def onMessageStatus(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
@@ -259,10 +263,14 @@ class Server(ClientServer):
         self._running=False
         
 class Client(ClientServer):
+    _Instance = None
+    
     def __init__(self):
         super().__init__(Color.Black, BGColor.Red)
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
         monitorConf = self.__class__.GetConfig()
+        self._offTime = monitorConf.time.off
+        self._onTime = monitorConf.time.on
         self._port = monitorConf.port
         address = ('localhost', self._port)
         self._client = multiprocessing.connection.Client(address, authkey = bytes(monitorConf.authkey,'utf-8'))
@@ -270,43 +278,59 @@ class Client(ClientServer):
 
     def __del__(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._client.close()
+
+    @classmethod
+    def GetInstance(cls):
+        if cls._Instance == None:
+            cls._Instance = Client()
+
+        return cls._Instance
+    
+    def queryService(self, service, requireResponse = True):
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(service={service})")
+        self._client.send(service)
+        response = self._client.recv() if requireResponse else None
+        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(response={response})")
+        return response
     
     def on(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._client.send("on")
+        return self.queryService("on")
 
     def off(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._client.send("off")
+        return self.queryService("off")
 
     def status(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
-        self._client.send("state")
-        response = self._client.recv()
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(response={response})")
-        return response
+        return self.queryService("state")
     
     def isOn(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
         status = self.status()
-        value = status != None and status in ["true", "True", "yes", "1", "on", "On"]
+        value = status != None and status.lower() in ["true", "yes", "1", "on"]
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(status={status}) --> {value}")
         return value
 
     def toggle(self):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
         if self.isOn():
-            self.off()
+            return self.off()
         else:
-            self.on()
+            return self.on()
 
     def switch(self, on):
         super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(on={on})")
         if not on and self.isOn():
-            self.off()
+            return self.off()
         elif on and not self.isOn():
-            self.on()
+            return self.on()
+
+    def getOffTime(self):
+        return self._offTime
+
+    def getOnTime(self):
+        return self._onTime
 
 def createAuthKey(renew = False):
     monitorConf = dictToObj.objFromJson(ClientServer.GetConfPath())
@@ -319,10 +343,12 @@ def createAuthKey(renew = False):
         monitorConf.port = Server.Port
         
     dictToObj.objToJsonFile(monitorConf, Server.GetConfPath())
-    
+
+
 if __name__ == "__main__":
     import time
 
+    print("start Monitor.Server...")
     opts, args = getopt.getopt(sys.argv[1:], "dt:", ["debug", "timeout="])
     debugging = False
     timeout = ClientServer.Timeout
@@ -334,6 +360,12 @@ if __name__ == "__main__":
             timeout = int(arg)
 
     level = logging.DEBUG if debugging else logging.FATAL
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    logFormatter = LogFormatter()    
+    console_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(console_handler)
+    console_handler.setFormatter(logFormatter)
     logging.basicConfig(level=level)
     createAuthKey()
 
