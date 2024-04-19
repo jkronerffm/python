@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 from graphs import *
+import inspect
 
 pygame.init()
 
@@ -34,9 +35,68 @@ class Orientation:
     LeftCenter = 19
     RightCenter = 35
     Center = 51
+
+class EventHandler:
+    '''
+    The class EventHandler maps the event by type to a function by name.
+
+    Attributes:
+        Map:   The map from event.type to function by name.
+    '''
+    Map = {
+        pygame.MOUSEBUTTONDOWN: 'onMouseDown',
+        pygame.MOUSEBUTTONUP: 'onMouseUp',
+        pygame.MOUSEMOTION: 'onMouseMove',
+        pygame.QUIT: 'onQuit'
+    }
+
+    @classmethod
+    def MapEvent(cls, event, obj):
+        '''
+        MapEvent maps the event to a method of obj.
+
+        :param cls:   The EventHandler class.
+        :param event: The event object to map to function in obj.
+        :param obj:   The object that contains method the event is to be mapped to.
+        :return:      The return value of method called in obj.
+
+        The event is mapped by attr type to obj. The mapping from event.type to method name is described
+        in class member Map. Params of method must be found by name in event.
+        '''
+        funcName = EventHandler.Map[event.type] if event.type in EventHandler.Map.keys() else None
+        func = getattr(obj, funcName) if funcName != None and hasattr(obj, funcName) else None
+        if func == None:
+            return None
+        argSpec = inspect.getfullargspec(func)
+        params = []
+        for arg in argSpec.args:
+            if arg == "self":
+                continue
+            if hasattr(event,arg):
+                val = getattr(event, arg)
+                params.append(val)
+        result = func(*params)
+        return result
     
 class GraphBase:
+    '''
+    GraphBase is Base class for all objects. It defines a method debug for common debugging
+    '''
     def debug(self, msg, **kwargs):
+        '''
+        The method writes a debug message.
+
+        :param self:   The pointer to the object itself.
+        :param msg:    The msg to be written to debug output.
+        :param kwargs: The keyword args.
+
+        Expected keys in kwargs:
+            classname: The name of class to be written in output. If not given,
+            self.__class__.__name__ will be used
+            condition: The condition to write out the msg. If not given, it will be written.
+
+graphs.py
+        '''
         classname = kwargs['classname'] if 'classname' in kwargs else self.__class__.__name__
         condition = kwargs['condition'] if 'condition' in kwargs else True
         if condition:
@@ -84,11 +144,13 @@ class GraphObject(GraphBase):
         self._active = active
         self.debug(f"(pos={self._pos}, size={self._size})", classname="GraphObject")
 
+    @property
     def parent(self):
         return self._parent
 
-    def setParent(self, value):
-        self._parent = parent
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
         
     def isIn(self, pos : Point):
         return Rect(self._pos, self._size).contains(pos)
@@ -112,34 +174,29 @@ class GraphObject(GraphBase):
         return False
         
     def eventHandler(self, event):
-        localPos = self.parent().rect().surfaceToRect(Point(event.pos)) if self.parent() != None else Point(event.pos)
+        localPos = self.parent.rect().surfaceToRect(Point(event.pos)) if self.parent != None else Point(event.pos)
         result = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            result = self.onMouseDown(event.pos, event.button)
-        elif event.type == pygame.MOUSEBUTTONUP:
-            result = self.onMouseUp(event.pos, event.button)
-        elif event.type == pygame.MOUSEMOTION:
-            result = self.onMouseMove(event.pos)
+        result = EventHandler.MapEvent(event, self)
 
         return result
         
     def _getPosAtOrientation(self):
         if (self._orientation & Orientation.HCenter) == Orientation.HCenter:
-            x = self._pos.x() - self.width() / 2
+            x = self._pos.x - self.width / 2
         elif (self._orientation & Orientation.Left) == Orientation.Left:
-            x = self._pos.x()
+            x = self._pos.x
         elif (self._orientation & Orientation.Right) == Orientation.Right:
-            x = self._pos.x() - self.width()
+            x = self._pos.x - self.width
         else:
-            x = self._pos.x()
+            x = self._pos.x
         if (self._orientation & Orientation.VCenter) == Orientation.VCenter:
-            y = self._pos.y() - self.height()/2
+            y = self._pos.y - self.height/2
         elif (self._orientation & Orientation.Top) == Orientation.Top:
-            y = self._pos.y()
+            y = self._pos.y
         elif (self._orientation & Orientation.Bottom) == Orientation.Bottom:
-            y = self._pos.y() - self.height()
+            y = self._pos.y - self.height
         else:
-            y = self._pos.y()
+            y = self._pos.y
 
         return x, y
         
@@ -149,41 +206,69 @@ class GraphObject(GraphBase):
         self._size = Size((width, height))
         x, y = self._getPosAtOrientation()
         screen.paint(surface, [x, y])
-        
-    def setPos(self, pos):
-        self._pos = pos
 
-    def left(self):
-        return self._pos.x()
-
-    def top(self):
-        return self._pos.y()
-
-    def right(self):
-        return self.left() + self.width()
-
-    def bottom(self):
-        return self.top() + self.height()
-    
+    @property        
     def pos(self):
         return self._pos
 
-    def setSize(self, size : Size):
-        self._size = size
-        
+    @pos.setter
+    def setPos(self, pos):
+        self._pos = pos
+
+    @property
+    def left(self):
+        return self._pos.x
+
+    @property
+    def top(self):
+        return self._pos.y
+
+    @property
+    def right(self):
+        return self.left + self.width
+
+    @property
+    def bottom(self):
+        return self.top + self.height
+
+    @property
     def size(self):
         return self._size
 
+    @size.setter
+    def size(self, size : Size):
+        self._size = size
+
+    @property
     def width(self):
-        return self._size.width() if self._size != None else 0
+        return self._size.width if self._size != None else 0
 
+    @width.setter
+    def width(self, value):
+        if self.size == None:
+            self.size = Size(value, 0)
+        else:
+            self.size.width = value
+            
+    @property
     def height(self):
-        return self._size.height() if self._size != None else 0
+        return self._size.height if self._size != None else 0
 
+    @height.setter
+    def height(self,  value):
+        if self.size == None:
+            self.size = Size(0, value)
+        else:
+            self.size.height = value
+            
     def rect(self):
         x,y = self._getPosAtOrientation()
         return Rect(Point((x,y)), self._size)
 
+    def surfaceToRect(self, point : Point):
+        myPoint = point if self.parent == None else self.parent.surfaceToRect(point)
+        return self.rect().surfaceToRect(myPoint)
+            
 class GraphObjectGroup(GraphObject):
     def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True, parent = None):
         super().__init__(pos, size, orientation, active=active, parent = parent)
@@ -194,6 +279,7 @@ class GraphObjectGroup(GraphObject):
         
     def addGraphObject(self, graphObject):
         self._graphObjects.append(graphObject)
+        graphObject.parent = self
 
     def draw(self, screen):
         if not self.isActive():
@@ -206,9 +292,9 @@ class GraphObjectGroup(GraphObject):
 
     def eventHandler(self, event):
         handled = False
-        localPos = self.rect().surfaceToRect(Point(event.pos))
+        localPos = self.surfaceToRect(Point(event.pos))
         for graphObject in self._graphObjects:
-            if graphObject.size() == None:
+            if graphObject.size == None:
                 continue
             if graphObject.rect().contains(localPos):
                 handled = graphObject.eventHandler(event)
@@ -224,8 +310,7 @@ class GraphObjectGroup(GraphObject):
         if not self.isActive():
             return
         for graphObject in self._graphObjects:
-            graphObject.update()
-            
+            graphObject.update()        
         
 class Text(GraphObject):
     def __init__(self, text, pos = Point((0, 0)), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
@@ -313,6 +398,9 @@ class PGRunner(GraphObject):
     def onMouseMove(self, pos):
         pass
 
+    def onQuit(self):
+        self._running = False
+        
     def handlePosEvent(self, event):
         for graphObject in self._graphObjects:
             if graphObject.rect().contains(Point(event.pos)):
@@ -324,15 +412,8 @@ class PGRunner(GraphObject):
         handled = self.handlePosEvent(event) if hasattr(event, "pos") else False
         if handled:
             return True
-        
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            self.onMouseDown(event.pos, event.button)
-            return True
-        elif event.type == pygame.MOUSEMOTION:
-            self.onMouseMove(event.pos)
-            return True
-        else:
-            return False
+
+        handled = EventHandler.MapEvent(event, self)        
         
     def handleEvents(self):
         for event in pygame.event.get():

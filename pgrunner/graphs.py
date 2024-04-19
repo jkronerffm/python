@@ -10,22 +10,26 @@ class Point:
             self._x = x
             self._y = y
 
+    @property
     def x(self):
         return self._x
 
+    @x.setter
+    def x(self, value):
+        self._x = value
+
+    @property
     def y(self):
         return self._y
+
+    @y.setter
+    def y(self, value):
+        self._y = value
 
     def set(self, value : tuple):
         self._x = value[0]
         self._y = value[1]
         
-    def setX(self, value):
-        self._x = value
-
-    def setY(self, value):
-        self._y = value
-
     def __iter__(self):
         yield self._x
         yield self._y
@@ -38,13 +42,13 @@ class Point:
     
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            return Point(x=self.x() + other.x(), y=self.y() + other.y())
+            return Point(x=self.x + other.x, y=self.y + other.y)
         else:
             raise TypeError("Unsupported operand type(s) for +")
 
     def __sub__(self, other):
         if isinstance(other, self.__class__):
-            return Point(x = self.x() - other.x(), y = self.y() - other.y())
+            return Point(x = self.x - other.x, y = self.y - other.y)
         else:
             raise TypeError("Unsupported operand type(s) for -")
 
@@ -62,23 +66,27 @@ class Size:
 
     def __str__(self):
         return f"({self._width}, {self._height})"
-    
+
+    @property
     def width(self):
         return self._width
 
+    @property
     def height(self):
         return self._height
 
-    def setWidth(self, value):
+    @width.setter
+    def width(self, value):
         self._width = value
 
-    def setHeight(self, value):
+    @height.setter
+    def height(self, value):
         self._height = value
 
     def __truediv__(self, value):
         logging.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(type(value) = {type(value)})")
         if isinstance(value, int):
-            return Size((int(self.width() / value), int(self.height() / value)))
+            return Size((int(self.width / value), int(self.height / value)))
         else:
             raise TypeError("Unsupported operand type(s) for /")
 
@@ -91,59 +99,87 @@ class Rect:
         self._pos = pos
         self._size = size
 
-    def x(self):
-        return self._pos.x()
-
+    @property
     def left(self):
-        return self.x()
+        return self.x
 
+    @left.setter
+    def left(self, value):
+        self.x = value
+
+    @property
     def right(self):
-        return self.x() + self.width()
+        return self.x + self.width
 
+    @right.setter
+    def right(self, value):
+        self.width = value - self.x
+
+    @property
     def top(self):
-        return self.y()
+        return self.y
 
-    def bottom(self):
-        return self.y() + self.height()
-    
-    def setX(self, value):
-        self._post.setX(value)
+    @top.setter
+    def top(self, value):
+        self.y = value
         
+    @property
+    def bottom(self):
+        return self.y + self.height
+
+    @property    
+    def x(self):
+        return self._pos.x
+
+    @x.setter
+    def x(self, value):
+        self._pos.x = value
+
+    @property
     def y(self):
-        return self._pos.y()
+        return self._pos.y
 
-    def setY(self, value):
-        self._pos.setY(value)
+    @y.setter
+    def y(self, value):
+        self._pos.y = value
 
+    @property
     def width(self):
-        return self._size.width()
+        return self._size.width
 
-    def setWidth(self, value):
-        self._size.setWidth(value)
+    @width.setter
+    def width(self, value):
+        self._size.width = value
 
+    @property
     def height(self):
-        return self._size.height()
+        return self._size.height
 
-    def setHeight(self, value):
-        self._size.setHeight(value)
+    @height.setter
+    def height(self, value):
+        self._size.height = value
 
+    @property
     def pos(self):
         return self._pos
 
-    def setPos(self, value):
+    @pos.setter
+    def pos(self, value):
         self._pos = value
-        
+
+    @property
     def size(self):
         return self._size
-    
-    def setSize(self, value):
+
+    @size.setter
+    def size(self, value):
         self._size = value
 
     def __iter__(self):
-        yield self._pos.x()
-        yield self._pos.y()
-        yield self._size.width()
-        yield self._size.height()
+        yield self._pos.x
+        yield self._pos.y
+        yield self._size.width
+        yield self._size.height
         
     def __repr__(self):
         return f"Rect(pos={repr(self._pos)}, size={repr(self._size)})"
@@ -152,20 +188,20 @@ class Rect:
         return f"({str(self._pos)}, {str(self._size)})"
     
     def contains(self, point : Point):
-        return (point.x() >= self.left() and point.y() >= self.top()) and (point.x() <= self.right() and point.y() <= self.bottom())
+        return (point.x >= self.left and point.y >= self.top) and (point.x <= self.right and point.y <= self.bottom)
 
     def surfaceToRect(self, point : Point):
-        return point - self.pos()
+        return point - self.pos
 
     def rectToSurface(self, point : Point):
-        return self.pos() + point
+        return self.pos + point
     
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     p1 = Point(x=10, y=20)
     print(p1)
-    print(p1.x(), p1.y())
-    p1.setX(30)
+    print(p1.x, p1.y)
+    p1.x = 30
     print(p1)
     p2 = Point((50, 40))
     print(p2)
@@ -175,7 +211,7 @@ if __name__ == "__main__":
     print(f"{s1} = {tuple(s1)}")
     r1 = Rect(p1, s1)
     print(f"{r1} = {tuple(r1)}")
-    print(f"rect: {r1.left()}, {r1.top()}, {r1.right()}, {r1.bottom()}")
+    print(f"rect: {r1.left}, {r1.top}, {r1.right}, {r1.bottom}")
     for point in [p1, p2, p3]:
         print(f"point={tuple(point)} is in r1{tuple(r1)} => {r1.contains(point)}")
 
@@ -183,7 +219,7 @@ if __name__ == "__main__":
     p1 = Point((100, 100))
     p2 = r.surfaceToRect(p1)
     print(f"r={r}, p={p1}, pointToRect->{p2}")
-    r.setPos(Point((100, 100)))
+    r.pos = Point((100, 100))
     p2 = r.surfaceToRect(p1)
     print(f"r={r}, p={p1}, pointInRect->{p2}")
     p3 = r.rectToSurface(p2)
