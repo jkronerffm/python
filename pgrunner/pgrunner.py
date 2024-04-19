@@ -274,7 +274,7 @@ class GraphObjectGroup(GraphObject):
         super().__init__(pos, size, orientation, active=active, parent = parent)
         self._backgroundColor = backgroundColor
         self._graphObjects = []
-        self._surface = PGSurface(self.size())
+        self._surface = PGSurface(self.size)
         self.debug(f"(pos={self._pos}, size={self._size})")
         
     def addGraphObject(self, graphObject):

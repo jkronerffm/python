@@ -14,7 +14,7 @@ class Time(Text):
         super().draw(surface)
 
     def onMouseDown(self, pos, button):
-        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}, button={button})")
+        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}={self.surfaceToRect(Point(pos))}, button={button})")
         return True
 
 class Date(Text):
@@ -30,7 +30,7 @@ class Date(Text):
         super().draw(surface)
 
     def onMouseDown(self, pos, button):
-        self.debug(f"(pos={pos}, button={button})")
+        self.debug(f"(pos={pos}={self.surfaceToRect(Point(pos))}, button={button})")
         return True
     
 class Clock(GraphObjectGroup):
@@ -41,14 +41,14 @@ class Clock(GraphObjectGroup):
         self.addGraphObject(Time())
 
     def onMouseDown(self, pos, button):
-        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}, button={button})")
+        logging.debug(f"{self.__class__.__name__}.onMouseDown(pos={pos}={self.surfaceToRect(Point(pos))}, button={button})")
         return True
         
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     try:
         runner = PGRunner(Size((1024, 768)), Colors.Black)
-        runner.addGraphObject(Clock(size = Size((800, 400)), pos=Point(tuple(runner.size()/2)), orientation = Orientation.Center))
+        runner.addGraphObject(Clock(size = Size((800, 400)), pos=Point(tuple(runner.size/2)), orientation = Orientation.Center))
         runner.run()
     except Exception as e:
         logging.exception(f"caught exception: {e}")
