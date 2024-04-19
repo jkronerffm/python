@@ -9,6 +9,7 @@ pygame.init()
 
 class Colors:
     Black = (0, 0, 0)
+    BlackTransparent = (0, 0, 0, 0)
     White = (255, 255, 255)
     Blue = (0, 0, 255)
     LightBlue = (173, 216, 230)
@@ -104,16 +105,23 @@ graphs.py
             
 class PGSurface(GraphBase):
     
-    def __init__(self, size : Size):
+    def __init__(self, size : Size, **kwargs):
         self._size = size
+        self._alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 255
         self._surface = self.getSurface()
         self.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
 
     def getSurface(self):
-        return pygame.Surface(self.size())
+        if self._alpha < 255:
+            return pygame.Surface(self.size(), pygame.SRCALPHA)
+        else:
+            return pygame.Surface(self.size())
     
     def fill(self, color):
-        self._surface.fill(color)
+        colorValue = color
+        if self._alpha < 255:
+            colorValue += (self._alpha,)
+        self._surface.fill(colorValue)
 
     def drawText(self, text, fgColor, font):
         surface = font.render(text, True, fgColor)
@@ -270,12 +278,13 @@ class GraphObject(GraphBase):
         return self.rect().surfaceToRect(myPoint)
             
 class GraphObjectGroup(GraphObject):
-    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, active=True, parent = None):
+
+    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, alpha=255, active=True, parent = None):
         super().__init__(pos, size, orientation, active=active, parent = parent)
         self._backgroundColor = backgroundColor
         self._graphObjects = []
-        self._surface = PGSurface(self.size)
-        self.debug(f"(pos={self._pos}, size={self._size})")
+        self._surface = PGSurface(self.size, alpha = alpha)
+        self.debug(f"(pos={self._pos}, size={self._size}), backgroundColor={backgroundColor}, alpha={alpha}")
         
     def addGraphObject(self, graphObject):
         self._graphObjects.append(graphObject)
