@@ -24,6 +24,13 @@ class SimpleScheduler:
         job[0].do(self.job,job[1])
         return job[0]
 
+    def addJobs(self, job):
+        logging.debug(f"{self.__class__.__name__}.addJob(job={job})")
+        result = None
+        for aJob in job[0]:
+            result = self.addJob((aJob, job[1]))
+        return result
+                        
     def job(self, action):
         logging.debug(f"{self.__class__.__name__}.job(action={action})")
         for cb in self.callbacks:

@@ -512,14 +512,25 @@ def initMonitorScheduler(monitorScheduler):
         now = datetime.now()
         tdOff = timedelta(minutes=1)
         tdOn = timedelta(minutes=4)
+        tdOn2 = timedelta(minutes=6)
         offTime = (now + tdOff).strftime("%H:%M")
         onTime = (now + tdOn).strftime("%H:%M")
+        onTime2 = (now +tdOn2).strftime("%H:%M")
     else:
         offTime = monitorClient.getOffTime()
         onTime = monitorClient.getOnTime()
+        onTime2 = monitorClient.getOnTime2()
     offJob = monitorScheduler.addJob((schedule.every().day.at(offTime), "off"))
-    onJob = monitorScheduler.addJob((schedule.every().day.at(onTime), "on"))
-    logging.debug(f"initMonitorScheduler(offJob={offJob}, onJob={onJob})")
+    onJobs = monitorScheduler.addJobs(([schedule.every().monday.at(onTime),
+                                       schedule.every().tuesday.at(onTime),
+                                       schedule.every().wednesday.at(onTime),
+                                       schedule.every().thursday.at(onTime),
+                                       schedule.every().friday.at(onTime),
+                                       schedule.every().saturday.at(onTime2),
+                                       schedule.every().sunday.at(onTime2)
+                                       ], "on"))
+    
+    logging.debug(f"initMonitorScheduler(offJob={offJob}, onJob={onJobs})")
     monitorScheduler.addActionCallback("off", monitorOffCallback)
     monitorScheduler.addActionCallback("on", monitorOnCallback)
     monitorScheduler.start()
@@ -878,7 +889,7 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "initStats.log")
         profiler = initProfiler()
-
+    monitor.setDimValue(radioPlayer.brightness())
     monitor.dim()
 ## start SimpleScheduler for Monitor
     monitorOffByScheduler = False

@@ -39,7 +39,7 @@ class StatusServer:
         while self.running():
             time.sleep(1)
             with self._listener.accept() as conn:
-                logging.debug(f"{self.__class__.__name__}.run(): connection accepted from", self._listener.last_accepted)
+                logging.debug(f"{self.__class__.__name__}.run(): connection accepted from {self._listener.last_accepted}")
                 while True:
                     msg = conn.recv()
                     logging.debug(f"{self.__class__.__name__}.run(msg={msg})")

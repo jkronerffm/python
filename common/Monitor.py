@@ -271,6 +271,7 @@ class Client(ClientServer):
         monitorConf = self.__class__.GetConfig()
         self._offTime = monitorConf.time.off
         self._onTime = monitorConf.time.on
+        self._onTime2 = monitorConf.time.on2
         self._port = monitorConf.port
         address = ('localhost', self._port)
         self._client = multiprocessing.connection.Client(address, authkey = bytes(monitorConf.authkey,'utf-8'))
@@ -331,6 +332,9 @@ class Client(ClientServer):
 
     def getOnTime(self):
         return self._onTime
+
+    def getOnTime2(self):
+        return self._onTime2
 
 def createAuthKey(renew = False):
     monitorConf = dictToObj.objFromJson(ClientServer.GetConfPath())
