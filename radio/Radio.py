@@ -893,8 +893,8 @@ if __name__ == "__main__":
     monitor.dim()
 ## start SimpleScheduler for Monitor
     monitorOffByScheduler = False
-    monitorScheduler = SimpleScheduler()
-    initMonitorScheduler(monitorScheduler)
+##    monitorScheduler = SimpleScheduler()
+##    initMonitorScheduler(monitorScheduler)
 ## start main loop
     while running:
         try:
@@ -981,5 +981,5 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     monitor.light()
-    monitorScheduler.stop()
+##    monitorScheduler.stop()
     sys.exit()
