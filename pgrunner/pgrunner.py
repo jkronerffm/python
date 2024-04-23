@@ -9,12 +9,13 @@ pygame.init()
 
 class Colors:
     Black = (0, 0, 0)
-    BlackTransparent = (0, 0, 0, 0)
     White = (255, 255, 255)
     Blue = (0, 0, 255)
     LightBlue = (173, 216, 230)
+    LightGray = (192, 192, 192)
 
 class Fonts:
+    Arial12 = pygame.font.SysFont('Arial', 12, False, False)
     Arial14 = pygame.font.SysFont('Arial', 14, True, False)
     Arial18 = pygame.font.SysFont('Arial', 18, True, False)
     Arial64 = pygame.font.SysFont('Arial', 64, True, False)
@@ -129,6 +130,9 @@ class PGSurface(GraphBase):
 
     def drawImage(self, image, pos):
         self._surface.blit(image, pos)
+
+    def drawRect(self, rect : Rect, color, width = 0):
+        pygame.draw.rect(self._surface, color, tuple(rect.pos) + tuple(rect.size), width)
         
     def paint(self, surface, pos):
         self._surface.blit(surface, pos)
@@ -351,6 +355,58 @@ class GraphObjectGroup(GraphObject):
             return
         for graphObject in self._graphObjects:
             graphObject.update()        
+
+class TextBox(GraphObject):
+    def __init__(self, text, pos = Point((0, 0)), size = Size((100, 20)), font = Fonts.Arial12, bgColor = Colors.LightGray, fgColor = Colors.Black, orientation = Orientation.TopLeft):
+        super().__init__(pos = pos, size = size, orientation = orientation)
+        self._text = text
+        self._font = font
+        self._bgColor = bgColor
+        self._fgColor = fgColor
+        self._surface = PGSurface(self.size, alpha = 255)
+
+    @property
+    def backgroundColor(self):
+        return self._bgColor
+
+    @backgroundColor.setter
+    def backgroundColor(self, value):
+        self._bgColor = value
+
+
+    @property
+    def foregroundColor(self):
+        return self._fgColor
+
+    @foregroundColor.setter
+    def foregroundColor(self, value):
+        self._fgColor = value
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        self._text = value
+        
+    def update(self):
+        pass
+
+    def drawBorder(self):
+        self._surface.drawRect(Rect(Point((0, 0)), self.size), color=self.foregroundColor, width=2)
+                               
+    def draw(self, screen):
+        self._surface.fill(self.backgroundColor)
+        self.drawBorder()
+        textSurface = self._surface.drawText(self._text, self.foregroundColor, self._font)
+        textWidth = textSurface.get_width()
+        textHeight = textSurface.get_height()
+        textSize = Size((textWidth, textHeight))
+        textPos = (self.size - textSize) / 2
+        self._surface.paint(textSurface, tuple(textPos))
+        super().paint(screen, self._surface._surface)
+        
         
 class Text(GraphObject):
     def __init__(self, text, pos = Point((0, 0)), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):

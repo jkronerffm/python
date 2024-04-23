@@ -83,8 +83,19 @@ class Size:
     def height(self, value):
         self._height = value
 
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            return Size(width = self.width + other.width, height = self.height + other.height)
+        else:
+            raise TypeError("Unsupported operand type(s) for +")
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            return Size(width = self.width - other.width, height = self.height -other.height)
+        else:
+            raise TypeError("Unsupported operand type(s) for -")
+        
     def __truediv__(self, value):
-        logging.debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(type(value) = {type(value)})")
         if isinstance(value, int):
             return Size((int(self.width / value), int(self.height / value)))
         else:
