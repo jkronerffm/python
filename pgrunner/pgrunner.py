@@ -127,6 +127,9 @@ class PGSurface(GraphBase):
         surface = font.render(text, True, fgColor)
         return surface
 
+    def drawImage(self, image, pos):
+        self._surface.blit(image, pos)
+        
     def paint(self, surface, pos):
         self._surface.blit(surface, pos)
 
@@ -143,6 +146,34 @@ class PGScreen(PGSurface):
     def getSurface(self):
         return pygame.display.set_mode(self.size())
 
+class PGImage(PGSurface):
+    def __init__(self, size: Size, filepath : str):
+        self.debug(f"(size={Size}, filepath={filepath})")
+        if len(filepath) > 0:
+            image = pygame.image.load(filepath)
+            self.debug(f"(image={image})")
+            rel = image.get_width() / image.get_height()
+            self.debug(f"() => rel of image size = {rel}")
+            newHeight = int(size.width / rel)
+            if newHeight < size.height:
+                newWidth = int(size.height * rel)
+                newSize = Size((newWidth, size.height))
+            else:
+                newSize = Size((size.width, newHeight))
+            self.debug(f"() => transform.scale({image}, {(size.width, newHeight)})")
+            imageScaled = pygame.transform.scale(image, tuple(newSize))
+            self._image = pygame.Surface(tuple(size))
+            self._image.blit(imageScaled, (0, 0) + tuple(size))
+            self.debug(f"(image={self._image})")
+
+    @property
+    def image(self):
+        return self._image
+
+    @image.setter
+    def image(self, value):
+        self._image = value
+        
 class GraphObject(GraphBase):
     def __init__(self, pos : Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True, parent=None):
         self._pos = pos
@@ -281,10 +312,10 @@ class GraphObjectGroup(GraphObject):
 
     def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, alpha=255, active=True, parent = None):
         super().__init__(pos, size, orientation, active=active, parent = parent)
+        self.debug(f"(pos={self._pos}, size={self._size}, orientation={orientation}, backgroundColor={backgroundColor}, alpha={alpha})",classname="GraphObjectGroup")
         self._backgroundColor = backgroundColor
         self._graphObjects = []
         self._surface = PGSurface(self.size, alpha = alpha)
-        self.debug(f"(pos={self._pos}, size={self._size}), backgroundColor={backgroundColor}, alpha={alpha}")
         
     def addGraphObject(self, graphObject):
         self._graphObjects.append(graphObject)
@@ -367,11 +398,12 @@ class Sprite(GraphObject):
         return self._pos[1]
 
 class PGRunner(GraphObject):
-    def __init__(self, size : Size, backgroundColor = Colors.Black):
+    def __init__(self, size : Size, backgroundColor = Colors.Black, backgroundImage = None):
         super().__init__(size = size, pos = Point((0,0)), parent = self)
         self._screen = PGScreen(self._size)
         self._running = False
         self._backgroundColor = backgroundColor
+        self._backgroundImage = backgroundImage
         self._clock = pygame.time.Clock()
         self._eventHandler = []
         self.addEventHandler(self.eventHandler)
@@ -383,6 +415,14 @@ class PGRunner(GraphObject):
     def addGraphObject(self, graphObject):
         self.debug(f"(graphObject={graphObject})")
         self._graphObjects.append(graphObject)
+
+    @property
+    def backgroundImage(self):
+        return self._backgroundImage
+
+    @backgroundImage.setter
+    def backgroundImage(self, value):
+        self._backgroundImage = value
         
     def setBackgroundColor(self, value):
         self.debug(f"(value={value}")
@@ -436,6 +476,8 @@ class PGRunner(GraphObject):
 
     def draw(self):
         self._screen.fill(self.backgroundColor())
+        if self.backgroundImage != None:
+            self._screen.drawImage(self.backgroundImage.image, (0, 0))
         for graphObject in self._graphObjects:
             graphObject.draw(self._screen)
             
