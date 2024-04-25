@@ -15,6 +15,7 @@ import sys
 import os
 import time
 import getopt
+import datetime
 from AnsiColors import Color, BGColor, Colors
 
 class Monitor:
@@ -130,6 +131,7 @@ class Monitor:
         logging.debug(f"{self.__class__.__name__}.toggle(toggleTo={toggleTo})")
         self._xset.toggle(toggleTo)
         self._on = toggleTo
+        logging.debug(f"{self.__class__.__name__}.toggle(on={self.isOn()})")
         return self.isOn()
 
     def on(self):
@@ -180,7 +182,7 @@ class ClientServer:
         self._color = clr(fgColor, bgColor)
 
     def debug(self, msg):
-        logging.debug(self._color + msg + Colors.Reset)
+        logging.debug(self._color + f"{self.__class__.__name__}.{inspect.stack()[1][3]}{msg}" + Colors.Reset)
 
     def GetConfPath():
         confFilepath = os.path.join(ClientServer.VarPath, ClientServer.ConfDir, ClientServer.Filename)
@@ -192,7 +194,7 @@ class ClientServer:
 class Server(ClientServer):
     def __init__(self, timeout=ClientServer.Timeout):
         super().__init__(Color.Black, BGColor.Green)
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug("()")
         monitorConf = self.__class__.GetConfig()
         self._port = monitorConf.port
         address = ('localhost', self._port)
@@ -204,15 +206,15 @@ class Server(ClientServer):
         return self._running
 
     def onMessageOn(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         return self._monitor.on()
 
     def onMessageOff(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         return self._monitor.off()
 
     def onMessageStatus(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         state = self._monitor.getState()
         return state
 
@@ -220,9 +222,9 @@ class Server(ClientServer):
         connected = True
         while connected:
             msg = connection.recv()
-            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(msg={msg})")
+            super().debug(f"(msg={msg})")
             if msg == "0" or len(msg) == 0:
-                super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): connection has been closed by client")
+                super().debug(f"(): connection has been closed by client")
                 connected = False
                 continue
             result = self.handleMessage(msg)
@@ -230,20 +232,21 @@ class Server(ClientServer):
                 connection.send(str(result))
         
     def handleClient(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        ##super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
         try:
             with self._listener.accept() as connection:
-                super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): client is connected")
+                super().debug(f"(): client is connected")
                 self.performMessages(connection)
         except EOFError:
-               super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): connection closed by client!")
-##        except timeout:
-##            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(): no connection. Continue...")
+               super().debug(f"(): connection closed by client!")
+        except error:
+            pass
+            ##super().debug(f"(): no connection. Continue...")
         except Exception as e:
-            super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(e=(typename={type(e).__name__},classname={e.__class__.__name__}, qualname={e.__class__.__qualname__})): error occured")
+            super().debug(f"(e=(typename={type(e).__name__},classname={e.__class__.__name__}, qualname={e.__class__.__qualname__})): error occured")
             
     def handleMessage(self, msg):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(msg={msg})")
+        super().debug(f"(msg={msg})")
         if msg == "on":
             return self.onMessageOn()
         elif msg == "off":
@@ -252,7 +255,7 @@ class Server(ClientServer):
             return self.onMessageStatus()
         
     def run(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         self._monitor = Monitor()
         self._running = True
         while self.isRunning():
@@ -267,7 +270,7 @@ class Client(ClientServer):
     
     def __init__(self):
         super().__init__(Color.Black, BGColor.Red)
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         monitorConf = self.__class__.GetConfig()
         self._offTime = monitorConf.time.off
         self._onTime = monitorConf.time.on
@@ -275,10 +278,10 @@ class Client(ClientServer):
         self._port = monitorConf.port
         address = ('localhost', self._port)
         self._client = multiprocessing.connection.Client(address, authkey = bytes(monitorConf.authkey,'utf-8'))
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(client={self._client})")
+        super().debug(f"(client={self._client})")
 
     def __del__(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
 
     @classmethod
     def GetInstance(cls):
@@ -288,40 +291,43 @@ class Client(ClientServer):
         return cls._Instance
     
     def queryService(self, service, requireResponse = True):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(service={service})")
+        super().debug(f"(service={service})")
         self._client.send(service)
         response = self._client.recv() if requireResponse else None
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(response={response})")
-        return response
+        super().debug(f"(response={response})")
+        return response != None and response.lower() in ['true', 'on', '1', 'yes', 'ok']
     
     def on(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         return self.queryService("on")
 
     def off(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         return self.queryService("off")
 
     def status(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         return self.queryService("state")
     
     def isOn(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
         status = self.status()
-        value = status != None and status.lower() in ["true", "yes", "1", "on"]
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(status={status}) --> {value}")
+        value = status
+        super().debug(f"(status={status}) --> {value}")
         return value
 
     def toggle(self):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}()")
+        super().debug(f"()")
+        result = None
         if self.isOn():
-            return self.off()
+            result = self.off()
         else:
-            return self.on()
+            result = self.on()
+        super().debug(f"() --> {result}")
+        return result
 
     def switch(self, on):
-        super().debug(f"{self.__class__.__name__}.{inspect.stack()[0][3]}(on={on})")
+        super().debug(f"(on={on})")
         if not on and self.isOn():
             return self.off()
         elif on and not self.isOn():
@@ -336,9 +342,15 @@ class Client(ClientServer):
     def getOnTime2(self):
         return self._onTime2
 
+    def isOffTime(self):
+        now = datetime.datetime.now().strftime("%H:%M")
+        result = now >= self.getOffTime() and now < self.getOnTime()
+        super().debug(f"(now={now},offTime={self.getOffTime()}, onTime={self.getOnTime()}) --> {result}")
+        return result
+        
 def createAuthKey(renew = False):
     monitorConf = dictToObj.objFromJson(ClientServer.GetConfPath())
-    logging.debug(f"{inspect.stack()[0][3]}(monitorConf={monitorConf})")
+    logging.debug(f"(monitorConf={monitorConf})")
     if not hasattr(monitorConf, "authkey") or renew:
         authKey = secrets.token_urlsafe(16)
         monitorConf.authkey = authKey
