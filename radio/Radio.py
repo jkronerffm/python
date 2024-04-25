@@ -452,10 +452,13 @@ def jobHandler(job):
         contHandler(job)
 
 def monitorOffAgain():
+    logging.debug("monitorOffAgain()")
     monitorClient = Monitor.Client.GetInstance()
     if monitorClient.isOn():
+        logging.debug("monitorOffAgain(): switch monitor off")
         monitorClient.off()
         enableScreenSaver()
+        
     schedule.clear('off_again')
 
 def switchMonitor(on):
@@ -465,6 +468,7 @@ def switchMonitor(on):
 
 def enableScreenSaver(enable = True):
 ## enable screensaver
+    logging.debug(f"enableScreenSaver(enable={enable})")
     pygame.display.set_allow_screensaver(enable)
     
 def toggleMonitor():
@@ -474,10 +478,12 @@ def toggleMonitor():
         logging.debug(f"toggleMonitor(monitorScheduler={monitorScheduler})")
         monitorClient = Monitor.Client.GetInstance()
         logging.debug("toggleMonitor(): {monitorClient} was created")
-        toggled = monitorClient.toggle()
-        enableScreenSaver(not toggled)
-        logging.debug(f"toggleMonitor(toggled={toggled}, monitorOffByScheduler={monitorOffByScheduler})")
-        if toggled and monitorOffByScheduler:
+        toggled = bool(monitorClient.toggle())
+        enable = not toggled
+        logging.debug(f"toggleMonitor(toggled={type(toggled)}({toggled}), enable={enable}, monitorOffByScheduler={monitorOffByScheduler})")
+        enableScreenSaver(enable)
+        if toggled and (monitorOffByScheduler or monitorClient.isOffTime()):
+            logging.debug("toggleMonitor(): add job")
             monitorScheduler.addJob((schedule.every(5).seconds.tag('off_again'), "off_again"))
             monitorScheduler.addActionCallback("off_again", monitorOffAgain)
     except Exception as e:
@@ -487,6 +493,7 @@ def monitorOnCallback():
     global monitorOffByScheduler
     logging.debug("monitorOnCallback()")
     monitorClient = Monitor.Client.GetInstance()
+    enableScreenSaver()
     if not monitorClient.isOn():
         monitorClient.on()
         enableScreenSaver(False)
@@ -496,9 +503,9 @@ def monitorOffCallback():
     global monitorOffByScheduler
     logging.debug("monitorOffCallback()")
     monitorClient = Monitor.Client.GetInstance()
+    enableScreenSaver()
     if monitorClient.isOn():
         monitorClient.off()
-        enableScreenSaver()
     monitorOffByScheduler = True
     
 def initMonitorScheduler(monitorScheduler):
@@ -533,7 +540,6 @@ def initMonitorScheduler(monitorScheduler):
     logging.debug(f"initMonitorScheduler(offJob={offJob}, onJob={onJobs})")
     monitorScheduler.addActionCallback("off", monitorOffCallback)
     monitorScheduler.addActionCallback("on", monitorOnCallback)
-    monitorScheduler.start()
     
 def startHandler(job):
     global radioPlayer
@@ -893,9 +899,11 @@ if __name__ == "__main__":
     monitor.dim()
 ## start SimpleScheduler for Monitor
     monitorOffByScheduler = False
-##    monitorScheduler = SimpleScheduler()
+    monitorScheduler = SimpleScheduler()
 ##    initMonitorScheduler(monitorScheduler)
+    monitorScheduler.start()
 ## start main loop
+    logging.debug("start main loop")
     while running:
         try:
             screen.fill(Colors.BLACK)
@@ -981,5 +989,5 @@ if __name__ == "__main__":
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     monitor.light()
-##    monitorScheduler.stop()
+    monitorScheduler.stop()
     sys.exit()
