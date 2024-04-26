@@ -53,7 +53,7 @@ class EventHandler:
     }
 
     @classmethod
-    def MapEvent(cls, event, obj):
+    def MapEvent(cls, event, target, obj = None):
         '''
         MapEvent maps the event to a method of obj.
 
@@ -66,7 +66,7 @@ class EventHandler:
         in class member Map. Params of method must be found by name in event.
         '''
         funcName = EventHandler.Map[event.type] if event.type in EventHandler.Map.keys() else None
-        func = getattr(obj, funcName) if funcName != None and hasattr(obj, funcName) else None
+        func = getattr(target, funcName) if funcName != None and hasattr(target, funcName) else None
         if func == None:
             return None
         argSpec = inspect.getfullargspec(func)
@@ -77,6 +77,8 @@ class EventHandler:
             if hasattr(event,arg):
                 val = getattr(event, arg)
                 params.append(val)
+            elif arg == "obj":
+                params.append(obj)
         result = func(*params)
         return result
     
@@ -110,7 +112,6 @@ class PGSurface(GraphBase):
         self._size = size
         self._alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 255
         self._surface = self.getSurface()
-        self.debug(f"PGSCreen(screen={self._surface}, size={self.size()})")
 
     def getSurface(self):
         if self._alpha < 255:
@@ -134,6 +135,19 @@ class PGSurface(GraphBase):
     def drawRect(self, rect : Rect, color, width = 0):
         pygame.draw.rect(self._surface, color, tuple(rect.pos) + tuple(rect.size), width)
         
+    def drawBorder(self, border = 3, bgColor = Colors.LightGray, borderColor = Colors.Black, sunken = False):
+        pygame.draw.rect(self._surface, bgColor, (0, 0) + tuple(self.size()), 0)
+
+        width = self.size()[0]
+        height = self.size()[1]
+        for i in range(0, border):
+            alpha = 192 if sunken else 8
+            pygame.draw.lines(self._surface, borderColor + (alpha,), False, [(i, height - i), (i, i), (width - i, i)], 1)
+
+        for i in range(0, border):
+            alpha = 16 + i * 16 if sunken else 192 - i * 16
+            pygame.draw.lines(self._surface, borderColor + (alpha,), False, [(i, height - i), (width - i, height-i), (width-i, i)], 1)
+            
     def paint(self, surface, pos):
         self._surface.blit(surface, pos)
 
@@ -179,7 +193,8 @@ class PGImage(PGSurface):
         self._image = value
         
 class GraphObject(GraphBase):
-    def __init__(self, pos : Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True, parent=None):
+    def __init__(self, name, pos : Point = Point((0, 0)), size : Size = None, orientation = Orientation.TopLeft, active = True, parent=None):
+        self._name = name
         self._pos = pos
         self._parent = parent
         self._size = size
@@ -187,6 +202,23 @@ class GraphObject(GraphBase):
         self._active = active
         self.debug(f"(pos={self._pos}, size={self._size})", classname="GraphObject")
 
+    def __str__(self):
+        return (f"name={self.name}" +
+                f", pos={self.pos}" +
+                f", size={self.size}" +
+                f", orientation={self.orientation}")
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.__str__()})"
+    
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        
     @property
     def parent(self):
         return self._parent
@@ -207,13 +239,13 @@ class GraphObject(GraphBase):
     def draw(self, screen):
         pass            
 
-    def onMouseDown(self, pos, button):
+    def onMouseDown(self, pos, button, obj):
         return False
 
-    def onMouseUp(self, pos, button):
+    def onMouseUp(self, pos, button, obj):
         return False
 
-    def onMouseMove(self, pos):
+    def onMouseMove(self, pos, obj):
         return False
         
     def eventHandler(self, event):
@@ -255,7 +287,7 @@ class GraphObject(GraphBase):
         return self._pos
 
     @pos.setter
-    def setPos(self, pos):
+    def pos(self, pos):
         self._pos = pos
 
     @property
@@ -303,7 +335,15 @@ class GraphObject(GraphBase):
             self.size = Size(0, value)
         else:
             self.size.height = value
-            
+
+    @property
+    def orientation(self):
+        return self._orientation
+
+    @orientation.setter
+    def orientation(self, value):
+        self._orientation = value
+        
     def rect(self):
         x,y = self._getPosAtOrientation()
         return Rect(Point((x,y)), self._size)
@@ -314,8 +354,8 @@ class GraphObject(GraphBase):
             
 class GraphObjectGroup(GraphObject):
 
-    def __init__(self, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, alpha=255, active=True, parent = None):
-        super().__init__(pos, size, orientation, active=active, parent = parent)
+    def __init__(self, name, size : Size, pos = Point((0,0)), orientation = Orientation.TopLeft, backgroundColor = Colors.Black, alpha=255, active=True, parent = None):
+        super().__init__(name, pos, size, orientation, active=active, parent = parent)
         self.debug(f"(pos={self._pos}, size={self._size}, orientation={orientation}, backgroundColor={backgroundColor}, alpha={alpha})",classname="GraphObjectGroup")
         self._backgroundColor = backgroundColor
         self._graphObjects = []
@@ -334,6 +374,17 @@ class GraphObjectGroup(GraphObject):
             graphObject.draw(self._surface)
         super().paint(screen, self._surface.surface())
 
+    def onMouseDown(self, pos, button, obj):
+        super().debug(f"(obj={repr(obj)})")
+        return True
+
+    def onMouseUp(self, pos, button, obj):
+        super().debug(f"(obj={repr(obj)})")
+        return True
+
+    def onMouseMove(self, pos, obj):
+        return True
+
     def eventHandler(self, event):
         handled = False
         localPos = self.surfaceToRect(Point(event.pos))
@@ -342,9 +393,10 @@ class GraphObjectGroup(GraphObject):
                 continue
             if graphObject.rect().contains(localPos):
                 handled = graphObject.eventHandler(event)
+                if not handled:
+                    handled = EventHandler.MapEvent(event, self, graphObject)
             if handled:
                 break
-
         if not handled:
             handled = super().eventHandler(event)
             
@@ -357,8 +409,8 @@ class GraphObjectGroup(GraphObject):
             graphObject.update()        
 
 class TextBox(GraphObject):
-    def __init__(self, text, pos = Point((0, 0)), size = Size((100, 20)), font = Fonts.Arial12, bgColor = Colors.LightGray, fgColor = Colors.Black, orientation = Orientation.TopLeft):
-        super().__init__(pos = pos, size = size, orientation = orientation)
+    def __init__(self, name, text, pos = Point((0, 0)), size = Size((100, 20)), font = Fonts.Arial12, bgColor = Colors.LightGray, fgColor = Colors.Black, orientation = Orientation.TopLeft):
+        super().__init__(name, pos = pos, size = size, orientation = orientation)
         self._text = text
         self._font = font
         self._bgColor = bgColor
@@ -409,8 +461,8 @@ class TextBox(GraphObject):
         
         
 class Text(GraphObject):
-    def __init__(self, text, pos = Point((0, 0)), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
-        super().__init__(pos)
+    def __init__(self, name, text, pos = Point((0, 0)), font = Fonts.Arial14, color = Colors.White, orientation = Orientation.TopLeft):
+        super().__init__(name, pos)
         self._text = text
         self._font = font
         self._color = color
@@ -454,8 +506,8 @@ class Sprite(GraphObject):
         return self._pos[1]
 
 class PGRunner(GraphObject):
-    def __init__(self, size : Size, backgroundColor = Colors.Black, backgroundImage = None):
-        super().__init__(size = size, pos = Point((0,0)), parent = self)
+    def __init__(self, name, size : Size, backgroundColor = Colors.Black, backgroundImage = None):
+        super().__init__(name, size = size, pos = Point((0,0)), parent = self)
         self._screen = PGScreen(self._size)
         self._running = False
         self._backgroundColor = backgroundColor
@@ -496,11 +548,11 @@ class PGRunner(GraphObject):
     def onKeyboardInterrupt(self):
         self.set_running(False)
 
-    def onMouseDown(self, pos, button):
+    def onMouseDown(self, pos, button, obj):
         self.debug(f"(pos={pos},button={button})")
         pass
 
-    def onMouseMove(self, pos):
+    def onMouseMove(self, pos, obj):
         pass
 
     def onQuit(self):
