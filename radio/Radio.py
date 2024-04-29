@@ -484,7 +484,7 @@ def toggleMonitor():
         enableScreenSaver(enable)
         if toggled and (monitorOffByScheduler or monitorClient.isOffTime()):
             logging.debug("toggleMonitor(): add job")
-            monitorScheduler.addJob((schedule.every(5).seconds.tag('off_again'), "off_again"))
+            monitorScheduler.addJob((schedule.every(monitorClient.getDelayOffTime()).seconds.tag('off_again'), "off_again"))
             monitorScheduler.addActionCallback("off_again", monitorOffAgain)
     except Exception as e:
         logging.exception(e)
