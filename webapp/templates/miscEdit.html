@@ -60,12 +60,17 @@
                   <input type="time" id="onTime" name="onTime" value="{{ onTime }}"/>
                 </td>
               </tr>
-              <tr>
+              <tr colspan="2">
                 <td>
                   <label for="delayOff">
-                    Verzögerung bis Ausschalten: <input type="range" min="5" max="300" value="{{ delayOff }}" oninput="this.nextElementSibling.value = this.value"/>
-                    <output>{{ delayOff }}s </output>
+                    Verzögerung bis Ausschalten:
                   </label>
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>
+                  <input type="number" min="5" max="300" value="{{ delayOff }}" style="width:75px"/>
                 </td>
               </tr>
             </table>
