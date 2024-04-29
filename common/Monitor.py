@@ -272,9 +272,10 @@ class Client(ClientServer):
         super().__init__(Color.Black, BGColor.Red)
         super().debug(f"()")
         monitorConf = self.__class__.GetConfig()
-        self._offTime = monitorConf.time.off
-        self._onTime = monitorConf.time.on
+        self._offTime = monitorConf.time.off if monitorConf.time.off != "test" else datetime.datetime.now().strftime("%H:%M")
+        self._onTime = monitorConf.time.on if monitorConf.time.on != "test" else (datetime.datetime.now() + datetime.timedelta(minutes=10)).strftime("%H:%M")
         self._onTime2 = monitorConf.time.on2
+        self._delayOffTime = int(monitorConf.time.delayOff) if hasattr(monitorConf.time, "delayOff") else 10
         self._port = monitorConf.port
         address = ('localhost', self._port)
         self._client = multiprocessing.connection.Client(address, authkey = bytes(monitorConf.authkey,'utf-8'))
@@ -333,6 +334,9 @@ class Client(ClientServer):
         elif on and not self.isOn():
             return self.on()
 
+    def getDelayOffTime(self):
+        return self._delayOffTime
+    
     def getOffTime(self):
         return self._offTime
 
