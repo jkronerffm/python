@@ -39,6 +39,39 @@
         <output>{{ brightness }}</output>
       </td>
     </tr>
+    <tr>
+      <td>
+        <fieldset>
+          <legend>Ruhezeit</legend>
+            <table>
+              <tr>
+                <td>
+                  <label for="offTime">Anfang:</label>
+                </td>
+                <td>
+                  <input type="time" id="offTime" name="offTime" value="{{ offTime }}"/>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label for="onTime">Ende:</label>
+                </td>
+                <td>
+                  <input type="time" id="onTime" name="onTime" value="{{ onTime }}"/>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label for="delayOff">
+                    Verzögerung bis Ausschalten: <input type="range" min="5" max="300" value="{{ delayOff }}" oninput="this.nextElementSibling.value = this.value"/>
+                    <output>{{ delayOff }}s </output>
+                  </label>
+                </td>
+              </tr>
+            </table>
+        </fieldset>
+      </td>
+    </tr>
     <!--
     <tr>
       <td><label for="timeSize">Gr&ouml;&szlig;e</label></td>

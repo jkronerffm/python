@@ -232,16 +232,21 @@ def doChangeSound():
 def doMisc():
     imageList = [filename for filename in os.listdir('/var/radio/background') if filename.endswith(('.jpg', '.jpeg', '.png', '.svg'))]
     radioData = dictToObj.objFromJson(os.path.join(basedir, confdir, conffile))
+    monitorData = dictToObj.objFromJson(os.path.join(basedir, confdir, monitorConfFile))
     selectedImage = os.path.basename(radioData.background)
     imageData = loadImageToBase64(pathlib.Path(radioData.background).as_uri())
     timeColor = radioData.timecolor if hasattr(radioData, "timecolor") else "#800000"
     brightness = radioData.brightness if hasattr(radioData, "brightness") else "20"
-    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor,brightness=brightness)
+    offTime = monitorData.time.off
+    onTime = monitorData.time.on
+    delayOff = monitorData.time.delayOff
+    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor,brightness=brightness, offTime=offTime, onTime=onTime, delayOff = delayOff)
     
 basedir = "/var/radio/"
 confdir = "conf"
 bgdir = "background"
 conffile = "radio.json"
+monitorConfFile = "monitor.json"
 
 @app.route("/radio/misc/save")
 def doSaveMisc():
@@ -257,16 +262,25 @@ def doSaveMisc():
         return redirect("/radio/misc")
         
     confFilepath = os.path.join(basedir, confdir, conffile)
+    monitorConfFilepath = os.path.join(basedir, confdir, monitorConfFile)
     background["url"] = pathlib.Path(background["filepath"]).as_uri()
     logging.debug(f"doSavebackground(background={background})")
     radioData = dictToObj.objFromJson(confFilepath)
+    monitorData = dictToObj.objFromJson(monitorConfFilepath)
     radioData.background= background["filepath"]
     timecolor = request.args.get("timecolor", "#800000")
     brightness = request.args.get("brightness", "20")
+    offTime = request.args.get("offTime", "22:00")
+    onTime = request.args.get("onTime", "06:00")
+    delayOff = request.args.get("delayOff", "15")
     radioData.timecolor = timecolor
     radioData.brightness = brightness
+    monitorData.time.off = offTime
+    monitorData.time.on = onTime
+    monitorData.time.delayOff = delayOff
     logging.debug(f"timecolor={timecolor}")
     dictToObj.objToJsonFile(radioData, confFilepath)
+    dictToObj.objToJsonFile(monitorData, monitorConfFilepath)
     return redirect("/radio")
         
 @app.route("/radio/background/get")
