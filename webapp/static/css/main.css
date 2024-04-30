@@ -135,7 +135,12 @@
     width: 10%; 
     text-align: center;
 }
-input[type=number]::-webkit-inner-spin-button {
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -moz-appearance: number-input;
+  -webkit-appearance: inner-spin-button;
+  magin: 0;
   opacity: 1;
   width: 80px;
 }

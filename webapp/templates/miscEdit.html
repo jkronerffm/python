@@ -4,8 +4,7 @@
 <form method="GET" action="/radio/misc/save">
   <table>
     <tr>
-      <td>Hintergrund:</td>
-      <td>
+      <td><label for="background">Hintergrund:</label>
         <select id="background" name="background" onchange="changeBgPic(setImage);">
           {% for image in imageList %}
             <option value="{{ image }}"
@@ -15,14 +14,12 @@
             >{{ image }}</option>
           {% endfor %}
         </select>
-      </td>
-      <td>
         <input type="button" id="addPic" name="addPic" value="..." onclick="document.getElementById('imageFile').click()">
         <input type="file" style="display:none;" id="imageFile" onchange="saveBackgroundFile()" accept=".jpg, .jpeg, .png, .svg">
       </td>
     </tr>
     <tr>
-      <td colspan="3">
+      <td colspan="2">
         <img src="{{ imageData }}" alt="{{ selectedImage }}" style="width:160px; height=100px;" id="backgroundImage"/>
       </td>
     </tr>
@@ -34,7 +31,7 @@
     </tr>
     <tr>
       <td>
-        <label for="brightness">Gedämmte Helligkeit:</label>
+        <label for="brightness">Gedämmte Helligkeit:</label><br>
         <input type="range" id="brightness" name="brightness" min="0" max="100" value="{{ brightness }}" oninput="this.nextElementSibling.value = this.value"/>
         <output>{{ brightness }}</output>
       </td>
@@ -49,28 +46,27 @@
                   <label for="offTime">Anfang:</label>
                 </td>
                 <td>
-                  <input type="time" id="offTime" name="offTime" value="{{ offTime }}"/>
+                  <label for="onTime">Ende:</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <label for="onTime">Ende:</label>
+                  <input type="time" id="offTime" name="offTime" value="{{ offTime }}"/>
                 </td>
                 <td>
                   <input type="time" id="onTime" name="onTime" value="{{ onTime }}"/>
                 </td>
               </tr>
-              <tr colspan="2">
-                <td>
+              <tr>
+                <td colspan="2">
                   <label for="delayOff">
-                    Verzögerung bis Ausschalten:
+                    Verz&ouml;gerung bis Auschalten:
                   </label>
                 </td>
               </tr>
               <tr>
-                <td></td>
-                <td>
-                  <input type="number" min="5" max="300" value="{{ delayOff }}" style="width:75px"/>
+                <td colspan="2">
+                  <input type="number" min="5" max="300" id="delayOff" name="delayOff" value="{{ delayOff }}" style="width:68px"/> Sekunden
                 </td>
               </tr>
             </table>
