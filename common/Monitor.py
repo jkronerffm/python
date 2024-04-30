@@ -290,7 +290,11 @@ class Client(ClientServer):
             cls._Instance = Client()
 
         return cls._Instance
-    
+
+    @classmethod
+    def ReleaseInstance(cls):
+        cls._Instance = None
+        
     def queryService(self, service, requireResponse = True):
         super().debug(f"(service={service})")
         self._client.send(service)

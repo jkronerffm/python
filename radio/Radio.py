@@ -454,6 +454,7 @@ def jobHandler(job):
 def monitorOffAgain():
     logging.debug("monitorOffAgain()")
     monitorClient = Monitor.Client.GetInstance()
+    enableScreenSaver(False)
     if monitorClient.isOn():
         logging.debug("monitorOffAgain(): switch monitor off")
         monitorClient.off()
@@ -657,6 +658,10 @@ def soundHandler(filepath, modificationTime):
     logger.debug(f">> post event {event}")
     pygame.event.post(event)
 
+def monitorHandler(filepath, modificationTime):
+    logging.debug(f"monitorHandler(filepath={filepath}): release monitorClient")
+    Monitor.Client.ReleaseInstance()
+    
 def buttonDown(buttonCode):
     buttonKey = ircontrol.GetHashKey(buttonCode)
     eventKey = IrKey.FromButtonKey(buttonKey)
@@ -859,6 +864,8 @@ if __name__ == "__main__":
     confFilepathRadio = os.path.join(rootDir, confDir, "radio.json")
     confFilepathWaketime = os.path.join(rootDir, confDir, "waketime.json")
     confFilepathSound = os.path.join(rootDir, confDir, "sound.json")
+    confFilepathMonitor = os.path.join(rootDir, confDir, "monitor.json")
+    
     radioPlayer = RadioPlayer(confFilepathRadio)
     load_Settings()
     hexCol = radioPlayer.timeColor()
@@ -875,6 +882,7 @@ if __name__ == "__main__":
     watchDog.watch(confFilepathRadio, radioHandler)
     watchDog.watch(confFilepathWaketime, waketimeHandler)
     watchDog.watch(confFilepathSound, soundHandler)
+    watchDog.watch(confFilepathMonitor, monitorHandler)
     running = True
     active = False
     clock = pygame.time.Clock()
