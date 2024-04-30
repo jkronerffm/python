@@ -48,7 +48,7 @@ class SimpleScheduler:
             count = 0
             while not SimpleScheduler.Thread.Stop.is_set():
                 count+= 1
-                if (count % 10) == 0:
+                if (count % 1000) == 0:
                     logging.debug(f"{cls.__name__}.run() in loop")
                     count = 0
                 schedule.run_pending()
