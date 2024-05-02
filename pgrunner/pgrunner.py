@@ -166,23 +166,17 @@ class PGScreen(PGSurface):
 
 class PGImage(PGSurface):
     def __init__(self, size: Size, filepath : str):
-        self.debug(f"(size={Size}, filepath={filepath})")
         if len(filepath) > 0:
             image = pygame.image.load(filepath)
-            self.debug(f"(image={image})")
             rel = image.get_width() / image.get_height()
-            self.debug(f"() => rel of image size = {rel}")
             newHeight = int(size.width / rel)
             if newHeight < size.height:
                 newWidth = int(size.height * rel)
                 newSize = Size((newWidth, size.height))
             else:
                 newSize = Size((size.width, newHeight))
-            self.debug(f"() => transform.scale({image}, {(size.width, newHeight)})")
-            imageScaled = pygame.transform.scale(image, tuple(newSize))
             self._image = pygame.Surface(tuple(size))
             self._image.blit(imageScaled, (0, 0) + tuple(size))
-            self.debug(f"(image={self._image})")
 
     @property
     def image(self):
@@ -200,7 +194,6 @@ class GraphObject(GraphBase):
         self._size = size
         self._orientation = orientation
         self._active = active
-        self.debug(f"(pos={self._pos}, size={self._size})", classname="GraphObject")
 
     def __str__(self):
         return (f"name={self.name}" +
@@ -232,6 +225,9 @@ class GraphObject(GraphBase):
         
     def isActive(self):
         return self._active
+
+    def create(self):
+        pass
     
     def update(self):
         pass
@@ -385,6 +381,10 @@ class GraphObjectGroup(GraphObject):
     def onMouseMove(self, pos, obj):
         return True
 
+    def create(self):
+        for graphObject in self._graphObjects:
+            graphObject.create()
+    
     def eventHandler(self, event):
         handled = False
         localPos = self.surfaceToRect(Point(event.pos))
@@ -506,6 +506,7 @@ class Sprite(GraphObject):
         return self._pos[1]
 
 class PGRunner(GraphObject):
+    Ticks = 60
     def __init__(self, name, size : Size, backgroundColor = Colors.Black, backgroundImage = None):
         super().__init__(name, size = size, pos = Point((0,0)), parent = self)
         self._screen = PGScreen(self._size)
@@ -521,7 +522,6 @@ class PGRunner(GraphObject):
         self._eventHandler.append(eventHandler)
 
     def addGraphObject(self, graphObject):
-        self.debug(f"(graphObject={graphObject})")
         self._graphObjects.append(graphObject)
 
     @property
@@ -557,7 +557,11 @@ class PGRunner(GraphObject):
 
     def onQuit(self):
         self._running = False
-        
+
+    def create(self):
+        for graphObject in self._graphObjects:
+            graphObject.create()
+            
     def handlePosEvent(self, event):
         for graphObject in self._graphObjects:
             if graphObject.rect().contains(Point(event.pos)):
@@ -590,15 +594,16 @@ class PGRunner(GraphObject):
             graphObject.draw(self._screen)
             
     def run(self):
-        self.set_running()
         self.debug("() enter")
+        self.create()
+        self.set_running()
         while self.running():
             try:
                 self.handleEvents()
                 self.update()
                 self.draw()
                 pygame.display.flip()
-                self._clock.tick(60)
+                self._clock.tick(self.Ticks)
             except KeyboardInterrupt:
                 self.set_running(False)
         self.debug("() leave")
@@ -606,8 +611,8 @@ class PGRunner(GraphObject):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     try:
-        runner = PGRunner(Size((800, 400)), Colors.LightBlue)
-        runner.addGraphObject(Text("hello world", Point((400, 200)), font=Fonts.Arial64,orientation=Orientation.Center))
+        runner = PGRunner(__name__, Size((800, 400)), Colors.LightBlue)
+        runner.addGraphObject(Text("text", "hello world", Point((400, 200)), font=Fonts.Arial64,orientation=Orientation.Center))
         runner.run()
     except Exception as e:
         logging.exception(f"caught exception: {e}")
