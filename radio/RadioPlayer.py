@@ -12,6 +12,7 @@ from ctypes import *
 class RadioPlayer:
     CurrSender = ""
     CurrTitle = ""
+    LocalList = "wake up"
     
     def __init__(self, configFile):
         self._senderData = {}
@@ -86,9 +87,9 @@ class RadioPlayer:
     
     def play(self, senderName):
         logging.debug("play(sender=%s)" % (senderName))
-        sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName("my music")
+        sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName(RadioPlayer.LocalList)
         
-        if sender["name"] == "my music":
+        if sender["name"] == RadioPlayer.LocalList:
             self.playRandomized(sender["url"])
         else:
             url = sender["url"]

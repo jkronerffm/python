@@ -124,7 +124,7 @@ def check_clickOnSender(pos):
     for sender in radioPlayer.sender():
         if point_in_rect(pos, sender['rect']):
             if not haveInternet():
-                sender = radioPlayer.getSenderByName('my music')
+                sender = radioPlayer.getSenderByName(RadioPlayer.LocalList)
             currentsender = sender
             focusOnSender = True
             radioPlayer.play(currentsender['name'])
@@ -547,7 +547,7 @@ def startHandler(job):
     global currentsender
     global active
     
-    sendername = getSendernameFromJob(job) if haveInternet() else "my music"
+    sendername = getSendernameFromJob(job) if haveInternet() else RadioPlayer.LocalList
     activeJob = job.id()
     logging.debug(f"startHandler(job={str(job)}, activeJob={activeJob})")
     if haveInternet() and hasattr(job, 'timeannouncement') and job.timeannouncement():
@@ -572,7 +572,7 @@ def contHandler(job):
     global radioPlayer
     global active
     global currentSender
-    sendername = getSendernameFromJob(job) if haveInternet() else "my music"
+    sendername = getSendernameFromJob(job) if haveInternet() else RadioPlayer.LocalList
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
     switchBrightness()
