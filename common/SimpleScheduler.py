@@ -11,6 +11,14 @@ class SimpleScheduler:
         self.actionCallbacks = {}
         self.jobs = []
         self._loopCount = loopCount
+
+    @property
+    def loopCount(self):
+        return self._loopCount
+
+    @loopCount.setter
+    def loopCount(self, value):
+        self._loopCount = value
         
     def addCallback(self,callback):
         self.callbacks.append(callback)
@@ -41,6 +49,7 @@ class SimpleScheduler:
             logging.debug(f"{self.__class__.__name__}.job(action={action}) back from actionCallback")
    
     class Thread(threading.Thread):
+        LoopCount = 1000
         Stop = threading.Event()
         Interval = 3
         @classmethod
@@ -49,7 +58,7 @@ class SimpleScheduler:
             count = 0
             while not SimpleScheduler.Thread.Stop.is_set():
                 count+= 1
-                if (count % self._loopCount) == 0:
+                if (count % cls.LoopCount) == 0:
                     logging.debug(f"{cls.__name__}.run() in loop")
                     count = 0
                 schedule.run_pending()
@@ -58,6 +67,7 @@ class SimpleScheduler:
 
     def start(self):
         logging.debug(f"{self.__class__.__name__}.start()")
+        SimpleScheduler.Thread.LoopCount = self.loopCount
         self._thread = SimpleScheduler.Thread()
         self._thread.start()
 
