@@ -31,18 +31,19 @@ class WatchDog:
         path = Path(dirname)
         files = list(path.iterdir())
         lastTime = 0
-        changedFile = ""
+        changedFiles = {}
+        now = time.time()
         for file in files:
             basename = os.path.basename(file)
             if basename.startswith('.') or basename.endswith('.swp'):
                 continue
             mtime = os.path.getmtime(file)
-            if mtime > lastTime:
+            if (now-mtime) < 2:
                 lastTime = mtime
-                changedFile = str(file)
+                changedFiles[str(file)] = datetime.datetime.fromtimestamp(lastTime, datetime.timezone.utc)
 
         instance = WatchDog.GetInstance()
-        instance.fireEvent(changedFile, datetime.datetime.fromtimestamp(lastTime, datetime.timezone.utc))
+        instance.fireEvents(changedFiles)
 
     def watch(self, filepath, handler):    
         dirname = os.path.dirname(filepath)
@@ -78,6 +79,11 @@ class WatchDog:
         handler = self.getHandler(changedFile)
         if handler != None:
             handler(changedFile, modifiedTime)
+
+    def fireEvents(self, changedFiles):
+        logging.debug(f"fireEvents(changedFiles={changedFiles})")
+        for changedFile, modifiedTime in changedFiles.items():
+            self.fireEvent(changedFile, modifiedTime)
 
 def waketime_handler(changedFile, modifiedTime):
     logging.debug(f"waketime_handler(changedFille={changedFile}, modifiedTime={str(modifiedTime)})")
