@@ -948,7 +948,6 @@ if __name__ == "__main__":
                         timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
                         newBrightness = radioPlayer.brightness()
                         defImageWidth = radioPlayer.imageWidth()
-                        logging.debug(f"main loop: new defImageWidth={defImageWidth}")
                         monitor.setDimValue(newBrightness)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
