@@ -35,7 +35,10 @@ class RadioPlayer:
         
     def brightness(self):
         return int(self._senderData['brightness']) / 100
-        
+
+    def imageWidth(self):
+        return int(self._senderData['imageWidth']) if 'imageWidth' in self._senderData else 64
+    
     def readConfigFile(self, configFile):
         with open(configFile) as jsonFile:
             self._senderData = json.load(jsonFile)

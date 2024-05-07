@@ -314,6 +314,7 @@ def draw_sender(sender, x, y):
     global screenWidth, screenHeight
     global screenBorder
     global senderWidth, senderHeight
+    global defImageWidth
     global screen
     global focusOnSender
 
@@ -330,7 +331,7 @@ def draw_sender(sender, x, y):
                 image = pygame.image.load(imagepath)
                 sender['image'] = image
             (width, height) = image.get_size()
-            imageWidth = 64
+            imageWidth = defImageWidth
             imageHeight = imageWidth * height / width
             senderHeight = imageHeight if imageHeight > senderHeight else senderHeight
             sender['rect'].height = senderHeight
@@ -854,6 +855,7 @@ if __name__ == "__main__":
     screenBorder = 10
     senderWidth = (screenWidth - 2 * screenBorder) / 6
     senderHeight = 60
+    defImageWidth = 96
     volume = 0
     screen = pygame.display.set_mode((screenWidth,screenHeight), pygame.NOFRAME)
     focusOnVolumeSettings = False
@@ -889,6 +891,7 @@ if __name__ == "__main__":
 ## initialize display    
     backgroundfile = radioPlayer.background()
     iconFile = radioPlayer.icon()
+    defImageWidth = radioPlayer.imageWidth()
     icon = pygame.image.load(iconFile)
     pygame.display.set_icon(icon)
     pygame.display.set_caption("Radio")
@@ -944,6 +947,8 @@ if __name__ == "__main__":
                         loadBackgroundImage(radioPlayer.background())
                         timeColor = hexcolors.hexToRgb(radioPlayer.timeColor())
                         newBrightness = radioPlayer.brightness()
+                        defImageWidth = radioPlayer.imageWidth()
+                        logging.debug(f"main loop: new defImageWidth={defImageWidth}")
                         monitor.setDimValue(newBrightness)
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
