@@ -38,6 +38,13 @@
     </tr>
     <tr>
       <td>
+        <label for="imageWidth">Bildbreite(Sender):</label><br>
+        <input type="range" id="imageWidth" name="imageWidth" min="64" max="128" value="{{ imageWidth }}" oninput="this.nextElementSibling.value= this.value"/>
+        <output>{{ imageWidth }}</output>
+      </td>
+    </tr>
+    <tr>
+      <td>
         <fieldset>
           <legend>Ruhezeit</legend>
             <table>

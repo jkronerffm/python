@@ -237,10 +237,11 @@ def doMisc():
     imageData = loadImageToBase64(pathlib.Path(radioData.background).as_uri())
     timeColor = radioData.timecolor if hasattr(radioData, "timecolor") else "#800000"
     brightness = radioData.brightness if hasattr(radioData, "brightness") else "20"
+    imageWidth = radioData.imageWidth if hasattr(radioData, "imageWidth") else "64"
     offTime = monitorData.time.off
     onTime = monitorData.time.on
     delayOff = monitorData.time.delayOff
-    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor,brightness=brightness, offTime=offTime, onTime=onTime, delayOff = delayOff)
+    return render_template('miscEdit.html', header='Sonstiges', imageList=imageList, selectedImage=selectedImage, imageData=imageData, timeColor=timeColor,brightness=brightness, imageWidth=imageWidth, offTime=offTime, onTime=onTime, delayOff = delayOff)
     
 basedir = "/var/radio/"
 confdir = "conf"
@@ -270,11 +271,13 @@ def doSaveMisc():
     radioData.background= background["filepath"]
     timecolor = request.args.get("timecolor", "#800000")
     brightness = request.args.get("brightness", "20")
+    imageWidth = request.args.get("imageWidth", "64")
     offTime = request.args.get("offTime", "22:00")
     onTime = request.args.get("onTime", "06:00")
     delayOff = request.args.get("delayOff", "15")
     radioData.timecolor = timecolor
     radioData.brightness = brightness
+    radioData.imageWidth = imageWidth
     monitorData.time.off = offTime
     monitorData.time.on = onTime
     monitorData.time.delayOff = delayOff
