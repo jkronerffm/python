@@ -353,10 +353,25 @@ def draw_sender(sender, x, y):
     
 def drawTitle(topY):
     global ScreenWidth, screenHeight
+    global radioPlayer
+    global currentsender
     with MetaBackgroundWorker.Lock:
-        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18,200,(10,10), True)
-        xSender = (screenWidth - 250) / 2
-        ySender = (screenHeight - topY - 240) / 2 + topY
+        if not "bigImage" in currentsender or currentsender['bigImage'] == None:
+            imageFile = unquote(urlparse(currentsender['imagefile']).path)
+            image = pygame.image.load(imageFile)
+            imageWidth = image.get_width()
+            imageHeight = image.get_height()
+            scale = float(imageWidth) / float(imageHeight)
+            newWidth = 300
+            newHeight = int(newWidth / scale)
+            currentsender['bigImage'] = pygame.transform.scale(image, (newWidth, newHeight))
+
+        senderRect = currentsender['bigImage']
+        newWidth = senderRect.get_width()
+        newHeight = senderRect.get_height()
+##        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18,200,(10,10), True)
+        xSender = (screenWidth - newWidth) / 2
+        ySender = (screenHeight - topY - newHeight) / 2 + topY
         screen.blit(senderRect, [xSender, ySender])
         if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":        
             (textWidth, textHeight) = Fonts.font18.size(MetaBackgroundWorker.CurrentTitle)
@@ -364,7 +379,7 @@ def drawTitle(topY):
             textHeight += 50
             titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18, 200, (10, 10), True)
             xTitle = (screenWidth - textWidth) / 2
-            yTitle = ySender + 80
+            yTitle = ySender + newHeight - textHeight
             screen.blit(titleRect, [xTitle, yTitle])    
             
 def draw_radio():
