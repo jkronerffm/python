@@ -356,22 +356,27 @@ def drawTitle(topY):
     global radioPlayer
     global currentsender
     with MetaBackgroundWorker.Lock:
-        if not "bigImage" in currentsender or currentsender['bigImage'] == None:
-            imageFile = unquote(urlparse(currentsender['imagefile']).path)
-            image = pygame.image.load(imageFile)
-            imageWidth = image.get_width()
-            imageHeight = image.get_height()
-            scale = float(imageWidth) / float(imageHeight)
-            newWidth = 300
-            newHeight = int(newWidth / scale)
-            currentsender['bigImage'] = pygame.transform.scale(image, (newWidth, newHeight))
-
-        senderRect = currentsender['bigImage']
-        newWidth = senderRect.get_width()
-        newHeight = senderRect.get_height()
-##        senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18,200,(10,10), True)
-        xSender = (screenWidth - newWidth) / 2
-        ySender = (screenHeight - topY - newHeight) / 2 + topY
+        if currentsender['imagefile'] != None:
+            ## use image file if available
+            if (not "bigImage" in currentsender or currentsender['bigImage'] == None):
+                ## if image is not already loaded
+                imageFile = unquote(urlparse(currentsender['imagefile']).path)
+                image = pygame.image.load(imageFile)
+                imageWidth = image.get_width()
+                imageHeight = image.get_height()
+                scale = float(imageWidth) / float(imageHeight)
+                rectWidth = 300
+                rectHeight = int(rectWidth / scale)
+                currentsender['bigImage'] = pygame.transform.scale(image, (rectWidth, rectHeight))
+            senderRect = currentsender['bigImage']
+        else:
+            senderRect = draw_textRect((250,60), MetaBackgroundWorker.CurrentSender, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18,200,(10,10), True)
+        rectWidth = senderRect.get_width()
+        rectHeight = senderRect.get_height()
+        xSender = (screenWidth - rectWidth) / 2
+        ySender = int((screenHeight - topY - rectHeight) / 2 + topY)
+        if (ySender + rectHeight) >= screenHeight:
+            ySender = screenHeight - rectHeight - 10
         screen.blit(senderRect, [xSender, ySender])
         if MetaBackgroundWorker.CurrentTitle != None and MetaBackgroundWorker.CurrentTitle != "" and MetaBackgroundWorker != " - ":        
             (textWidth, textHeight) = Fonts.font18.size(MetaBackgroundWorker.CurrentTitle)
@@ -379,7 +384,7 @@ def drawTitle(topY):
             textHeight += 50
             titleRect = draw_textRect((textWidth, textHeight), MetaBackgroundWorker.CurrentTitle, Colors.WHITE, Colors.BLACK, Colors.WHITE, Fonts.font18, 200, (10, 10), True)
             xTitle = (screenWidth - textWidth) / 2
-            yTitle = ySender + newHeight - textHeight
+            yTitle = ySender + rectHeight - textHeight
             screen.blit(titleRect, [xTitle, yTitle])    
             
 def draw_radio():
@@ -858,7 +863,7 @@ if __name__ == "__main__":
         screenHeight = info.current_h
     elif options.size() != None:
         screenWidth = int(options.size()[0])
-        screenHeight = int(options.size()[0])
+        screenHeight = int(options.size()[1])
     else:
         screenWidth = 1024
         screenHeight = screenWidth * 9 / 16
@@ -930,6 +935,7 @@ if __name__ == "__main__":
     monitorScheduler.start()
 ## start main loop
     logging.debug("start main loop")
+    titleDebuggedOnce = 3
     while running:
         try:
             screen.fill(Colors.BLACK)
