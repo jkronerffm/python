@@ -1,6 +1,6 @@
 from astral import LocationInfo
 from astral.moon import moonrise, moonset, phase
-from astral.sun import sun
+from astral.sun import sun, daylight
 from astral.location import Location
 from astral.geocoder import group, database, add_locations, lookup
 from enum import Enum
@@ -60,10 +60,7 @@ class AstralCalculator:
         date = self._date()
         tzinfo = self._tzinfo()
         s = sun(observer, date= date, tzinfo = tzinfo)
-        result = {
-            'sunrise': s['sunrise'],
-            'sunset': s['sunset']
-        }
+        result = s
         return result
 
     @staticmethod
@@ -116,17 +113,72 @@ class AstralCalculator:
     def get_Location(latitude, longitude):
         return f"{get_degrees(latitude)}N,{get_degrees(longitude)}E"
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING)
+def get_localArea():
     latitude=50.11
     longitude=8.68
     area = Area(city = "Frankfurt am Main",
                 country = "Deutschland",
                 timezone = "Europe/Berlin",
                 latitude=latitude, longitude=longitude)
+    return area
+
+def test_AstralCalculator(area):
     now =datetime.now()
     astralCalculator = AstralCalculator(area, now)
     suntime = astralCalculator.get_suntimes()
-    print(suntime)
+    for key, value in suntime.items():
+        print(f"{key:10s}: {value}")
     moontime = astralCalculator.get_moontimes()
-    print(moontime)
+    for key, value in moontime.items():
+        print(f"{key:10s}: {value}")
+
+def test_astralSun(area):
+    import astral.sun
+    from datetime import tzinfo
+    locationInfo = LocationInfo(area.city(), area.country(), area.timezone(), area.latitude(), area.longitude())
+    myCity = Location(locationInfo)
+    sunValues = sun(myCity.observer, datetime.now())
+    for key, value in sunValues.items():
+        print(f"{key:10s}: {value.astimezone(None)}")
+
+    v = daylight(myCity.observer, datetime.now())
+    julianday = astral.sun.julianday(datetime.now())
+    juliancentury= astral.sun.julianday_to_juliancentury(julianday)
+    zenith = astral.sun.zenith(myCity.observer, datetime.now(locationInfo.tzinfo))
+    elevation = astral.sun.elevation(myCity.observer, datetime(2024,3,26,6,30,0,tzinfo=locationInfo.tzinfo))
+    azimuth = astral.sun.azimuth(myCity.observer, datetime(2024,3,26,6,30,0,tzinfo=locationInfo.tzinfo))
+    sun_declination = astral.sun.sun_declination(juliancentury)
+    time_of_transit = astral.sun.time_of_transit(myCity.observer, datetime.now(locationInfo.tzinfo), zenith,direction=astral.sun.SunDirection.RISING)
+    zenith_and_azimuth = astral.sun.zenith_and_azimuth(myCity.observer, datetime.now(locationInfo.tzinfo))
+    print(f"daylight: {v}")
+    print(f"today: {astral.sun.today()}")
+    print(f"julianday: {julianday}")
+    print(f"juliancentury: {juliancentury}")
+    print(f"eccentric_location_earth_orbit: {astral.sun.eccentric_location_earth_orbit(juliancentury)}")
+    print(f"elevation: {elevation}, azimuth: {azimuth}")
+    print(f"zenith: {zenith}")
+    print(f"zenith_and_azimuth: {zenith_and_azimuth}")
+    print(f"refraction_at_zenith: {astral.sun.refraction_at_zenith(zenith)}")
+    print(f"sun_declination: {sun_declination}")
+    print(f"time_of_transit: {time_of_transit}")
+    print(dir(astral.sun))
+
+def test_elevation_and_azimuth(area):
+    import astral.sun
+    locationInfo = LocationInfo(area.city(), area.country(), area.timezone(), area.latitude(), area.longitude())
+    location = Location(locationInfo)
+    observer = location.observer
+    tzinfo = locationInfo.tzinfo
+    for h in range(0,24):
+        dt = datetime(2026, 3, 26, h, 0, 0, 0, tzinfo)
+        elevation = astral.sun.elevation(observer, dt)
+        azimuth = astral.sun.azimuth(observer, dt)
+        print(f"{dt}|{elevation:10.2f}|{azimuth:10.2f}")
+
+    
+    
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING)
+    area = get_localArea()
+    test_elevation_and_azimuth(area)
+    test_astralSun(area)
