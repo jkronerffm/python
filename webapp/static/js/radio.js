@@ -108,3 +108,13 @@ function changeBgPic(callback) {
   xhr.send();
   backgroundList.addEventListener("change", changeBgPic);
 }
+
+function onClickPlaylist(checkboxId, inputId, playListId) {
+  var checkBox = document.getElementById(checkboxId);
+  var input = document.getElementById(inputId);
+  var playLists = document.getElementById(playListId);
+  var isPlaylist = checkBox.checked
+  input.style.display = (isPlaylist ? 'none': 'initial');
+  playLists.style.display = (isPlaylist ? 'initial' : 'none');
+}    
+    

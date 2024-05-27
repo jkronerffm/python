@@ -2,13 +2,13 @@
 
 {% block content %}
 <form action="/radio/sender/save" method="post" enctype="multipart/form-data">
-  <input type="hidden", name="id", id="id", value="{{ senderId }}"/>
+  <input type="hidden" name="id" id="id" value="{{ senderId }}">
   <table>
     <tr>
       <td>Name:</td>
       <td><input type="text" id="name" name="name" value="{{ name }}"></td>
     </tr>
-    <tr>
+     <tr id="urlinput">
       <td>Adresse:</td>
       <td><input type="text" id="url" name="url" value="{{ url }}"></td>
     </tr>

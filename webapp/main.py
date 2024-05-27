@@ -91,13 +91,25 @@ def doEditSender():
     else:
         return redirect("/radio/sender")
     logging.debug(f"doSenderEdit(id={senderId},sender={sender})")
+    playlist = []
+    if sender.url.startswith('file://'):
+        p = urlparse(sender.url)
+        filepath = url2pathname(p.path)
+        if sender.url.endswith('.m3u'):
+            # read m3u
+            with open(filepath, 'r') as f:
+                playlist = [filename.strip() for filename in f.readlines()]
+        else:
+            # read files from folder
+            playlist = [filename for filename in os.listdir(filepath) if filename.endswith(('.mp3',))]
     imageData=loadImageToBase64(sender.imagefile)
-    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.imagefile), imageData=imageData, canDelete=True, isNew=False)
+    logging.debug(f"doEditSender(playlist={playlist}")
+    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.imagefile), imageData=imageData, canDelete=True, isNew=False, playlist=playlist)
 
 @app.route("/radio/sender/add")
 def doAddSender():
     senderId=str(uuid.uuid4())
-    return render_template("senderEdit.html", title="Neuer Sender", header="Neuer Sender", senderId=senderId, canDelete=False, isNew=True)
+    return render_template("senderEdit.html", title="Neuer Sender", header="Neuer Sender", senderId=senderId, canDelete=False, isNew=True, playlist=[])
 
 @app.route("/radio/sender/delete")
 def doDeleteSender():
