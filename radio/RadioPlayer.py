@@ -89,10 +89,11 @@ class RadioPlayer:
         return self.mediaPlayer().get_media()
     
     def play(self, senderName):
-        logging.debug("play(sender=%s)" % (senderName))
+        logging.debug("play(senderName=%s)" % (senderName))
         sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName(RadioPlayer.LocalList)
+        logging.debug(f"play(sender={sender}, shuffle={'shuffle' in sender and sender['shuffle']})")
         
-        if sender["name"] == RadioPlayer.LocalList:
+        if "shuffle" in sender and sender["shuffle"]:
             self.playRandomized(sender["url"])
         else:
             url = sender["url"]

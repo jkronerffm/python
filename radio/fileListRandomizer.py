@@ -7,7 +7,12 @@ import random
 def shufflePlayList(url):
     path = unquote(urlparse(url).path)
     logging.debug(f"shufflelPlayList(url={url}, path={path})")
-    files = [join(path,f) for f in listdir(path) if isfile(join(path, f))]
+    if path.endswith('.m3u'):
+        with open(path, 'r') as f:
+            files = [filename.strip() for filename in f.readlines()]
+            f.close()
+    else:
+        files = [join(path,f) for f in listdir(path) if isfile(join(path, f))]
     random.shuffle(files)
     return files
 
