@@ -52,7 +52,7 @@ def saveSender(senderId, name, url, imagefilepath):
         sender.name = name
         sender.url = url
         imageurl = pathlib.Path(imagefilepath).as_uri() if imagefilepath != None and imagefilepath != "" else ""
-        sender.image = imageurl
+        sender.imagefile = imageurl
         logging.debug(f"saveSender(imagefilepath={imagefilepath}, imageurl={imageurl})")
     else:
        createSender(senderId, name, url, imagefilepath)

@@ -10,7 +10,22 @@
     </tr>
      <tr id="urlinput">
       <td>Adresse:</td>
-      <td><input type="text" id="url" name="url" value="{{ url }}"></td>
+      <td><input type="text" id="url" name="url" value="{{ url }}" oninput="onChangeSenderUrl()"></td>
+    </tr>
+    <tr id="shuffleRow">
+      <td colspan="2">
+        <input type="checkbox" id="shuffle" name="shuffle" 
+        {%if shuffle %}
+        checked="checked"
+        {% endif %}
+        >
+        <script type="text/javascript">
+          var url = document.getElementById("url");
+          var shuffle = document.getElementById("shuffle");
+          shuffle.disabled = !(url.value.startsWith("file://"));
+         </script>
+        <label for="shuffle">Shuffle</label>
+      </td>
     </tr>
     <tr>
       <td>Bild:</td>

@@ -104,7 +104,8 @@ def doEditSender():
             playlist = [filename for filename in os.listdir(filepath) if filename.endswith(('.mp3',))]
     imageData=loadImageToBase64(sender.imagefile)
     logging.debug(f"doEditSender(playlist={playlist}")
-    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, image=makePathnameFromUrl(sender.imagefile), imageData=imageData, canDelete=True, isNew=False, playlist=playlist)
+    shuffle = hasattr(sender, "shuffle") and sender.shuffle
+    return render_template("senderEdit.html", title="Sender bearbeiten", header="Radio Sender bearbeiten", senderId = sender.id, name=sender.name, url=sender.url, shuffle=shuffle, image=makePathnameFromUrl(sender.imagefile), imageData=imageData, canDelete=True, isNew=False, playlist=playlist)
 
 @app.route("/radio/sender/add")
 def doAddSender():

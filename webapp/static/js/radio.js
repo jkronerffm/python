@@ -118,3 +118,8 @@ function onClickPlaylist(checkboxId, inputId, playListId) {
   playLists.style.display = (isPlaylist ? 'initial' : 'none');
 }    
     
+function onChangeSenderUrl() {
+  var urlElement = document.getElementById('url');
+  var shuffle = document.getElementById('shuffle');
+  shuffle.disabled = !(urlElement.value.startsWith('file://'));
+}
