@@ -20,7 +20,25 @@ class RadioPlayer:
         self._instance = vlc.Instance()
         self._player = self._instance.media_list_player_new()
         self._equalizerIndex = -1
+        self._playerStopEventHandler = []
+        self._stopping = False
 
+    @property
+    def stopping(self):
+        return self._stopping
+
+    @stopping.setter
+    def stopping(self, value):
+        self._stopping = value
+        
+    def addPlayerStopEventHandler(self, eventHandler):
+        self._playerStopEventHandler.append(eventHandler)
+
+    def firePlayerStop(self, event, player):
+        self.stopping = True
+        for eventHandler in self._playerStopEventHandler:
+            eventHandler(event, player)
+            
     def equalizerIndex(self):
         return self._equalizerIndex
 
@@ -51,6 +69,10 @@ class RadioPlayer:
     def sender(self):
         return self._senderData['sender']
 
+    def repeat(self, senderName):
+##        self.stop()
+        self.play(senderName)
+
     def getNextSender(self, senderName):
         senderList = self.sender()
         index = [index for index, sender in enumerate(senderList) if sender['name'] == senderName][0]
@@ -73,7 +95,16 @@ class RadioPlayer:
             if senderItem["url"].endswith(name):
                 return senderItem
         return None
-            
+
+    def setMediaPlayerStopEvent(self):
+        em = self.mediaPlayer().event_manager()
+        em.event_attach(vlc.EventType.MediaPlayerStopped, self.firePlayerStop, self.mediaPlayer())
+        
+    def clearMediaPlayerStopEvent(self):
+        mediaPlayer = self.mediaPlayer
+        eventManager = mediaPlayer().event_manager()
+        eventManager.event_detach(vlc.EventType.MediaPlayerStopped)
+        
     def currentSender(self):
         return self._currentSender
 
@@ -92,9 +123,11 @@ class RadioPlayer:
         logging.debug("play(senderName=%s)" % (senderName))
         sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName(RadioPlayer.LocalList)
         logging.debug(f"play(sender={sender}, shuffle={'shuffle' in sender and sender['shuffle']})")
+#        self.clearMediaPlayerStopEvent()
         
         if "shuffle" in sender and sender["shuffle"]:
             self.playRandomized(sender["url"])
+#            self.setMediaPlayerStopEvent()
         else:
             url = sender["url"]
             if "youtube" in url:
@@ -138,6 +171,7 @@ class RadioPlayer:
         
     def stop(self):
         self.player().stop()
+        self.stopping = False
 
     def getSenderByName(self, senderName):
         for sender in self.sender():

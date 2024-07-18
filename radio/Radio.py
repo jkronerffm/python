@@ -51,6 +51,7 @@ pygame.init()
 MetaEvent = pygame.event.custom_type() + 1
 SettingsEvent = pygame.event.custom_type() + 2
 IrEvent = pygame.event.custom_type() + 3
+RadioEvent = pygame.event.custom_type() + 4
 SettingsFilepath = "/var/radio/conf/radio_settings.json"
 
 class SettingsType(Enum):
@@ -95,6 +96,10 @@ class IrKey:
         if buttonKey in KeyMapping:
             result = KeyMapping[buttonKey]
         return result
+
+class PlayerEvent(Enum):
+    Unknown = 0
+    MediaStopped = 1
     
 class Colors:
     WHITE=(255,255,255)
@@ -119,11 +124,13 @@ def check_clickOnSender(pos):
     global focusOnSender
     global currentsender
     global radioPlayer
-    
+    logging.debug(f"check_clickOnSender(pos={pos})")
     focusOnSender = False
     for sender in radioPlayer.sender():
+        logging.debug(f"check_clickOnSender(sender['rect']={sender['rect']})")
         if point_in_rect(pos, sender['rect']):
             if not haveInternet():
+                logging.debug("checkClickOnSender(): no internet!!!")
                 sender = radioPlayer.getSenderByName(RadioPlayer.LocalList)
             currentsender = sender
             focusOnSender = True
@@ -444,7 +451,10 @@ def draw_clock():
     global timeColor
     
     nextRunTime = radioScheduler.nextRunTime()
-    nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
+    if nextRunTime != None:
+        nextRunTimeDisplay = "Nächste Weckzeit: %s" % (nextRunTime.strftime('%d.%m.%Y %H:%M'))
+    else:
+        nextRunTimeDisplay = "Nächste Weckzeit ist nicht definiert!"
     nrt = Fonts.font18.render(nextRunTimeDisplay, True, timeColor)
     screen.blit(nrt, [0, 0])
     now = datetime.fromtimestamp(mktime(localtime()))
@@ -696,6 +706,11 @@ def buttonPressed(buttonCode):
     event = pygame.event.Event(IrEvent, {'IrState': IrState.ButtonPressed, 'IrKey': eventKey})
     logging.debug(f"buttonPressed(event={event})")
     pygame.event.post(event)
+
+def mediaStopEventHandler(event, player):
+    global radioPlayer
+    event = pygame.event.Event(RadioEvent, {'PlayerEvent': PlayerEvent.MediaStopped })
+    pygame.event.post(event)
     
 def irCallback(buttonCode, buttonState):
     if buttonState != None:
@@ -793,7 +808,10 @@ def statusCallback():
     global radioScheduler
     logging.debug("statusCallback()")
     nextRunTime = radioScheduler.nextRunTime()
-    nextRunTimeDisplay = nextRunTime.strftime('%d.%m.%Y %H:%M')
+    if nextRunTime != None:
+        nextRunTimeDisplay = nextRunTime.strftime('%d.%m.%Y %H:%M')
+    else:
+        nextRunTimeDisplay = "No next runtime"
     return {"running": True, "active": active, "current_sender": currentsender['name'], "volume": volume, "equalizer": currentequalizer.name, "next_runtime": nextRunTimeDisplay}
 
 def loadBackgroundImage(backgroundfile):
@@ -893,6 +911,9 @@ if __name__ == "__main__":
     hexCol = radioPlayer.timeColor()
     timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
     monitor = Monitor.Monitor(delay=5.0)
+## initialize RadioEvents
+##    radioPlayer.addPlayerStopEventHandler(mediaStopEventHandler)
+    
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
     radioScheduler.setAddJobHandler(onAddJob)
@@ -1006,6 +1027,9 @@ if __name__ == "__main__":
                         elif event.IrKey == IrKey.VolumeDown and active:
                             logging.debug(f"IRControl-->VolumeDown: decrease volume")
                             toggleVolume(False)
+                elif event.type == RadioEvent:
+                    if event.PlayerEvent == PlayerEvent.MediaStopped:
+                        radioPlayer.repeat(currentsender["name"])
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:
