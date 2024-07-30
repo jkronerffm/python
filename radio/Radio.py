@@ -712,10 +712,6 @@ def mediaStopEventHandler(event, player):
     event = pygame.event.Event(RadioEvent, {'PlayerEvent': PlayerEvent.MediaStopped })
     pygame.event.post(event)
     
-def irCallback(buttonCode, buttonState):
-    if buttonState != None:
-        buttonState.setButtonDown(buttonCode)
-        
 def toggleVolume(up):
     global volume
     if up:
@@ -841,6 +837,44 @@ def saveStats(profiler, filename):
         stats.print_stats()
         with open(os.path.join(logDir, logFile), "w") as f:
             f.write(s.getvalue())
+
+class RemoteControl:
+    ConfigPath = "/var/radio/remotecontrol"
+    
+    def __init__(self, name):
+        self._name = name
+        self._pi = None
+        self._daemon = None
+
+    @staticmethod
+    def irCallback(buttonCode, buttonState):
+        if buttonState != None:
+            buttonState.setButtonDown(buttonCode)
+            
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+    
+    def start(self):
+        ircontrol.ReadHashes(os.path.join(RemoteControl.ConfigPath, self.name + ".json"))
+        self._pi = pigpio.pi()
+        self._daemon = Daemon("pigpio")
+        self._daemon.start()
+        self._buttonState = ButtonState.Start(buttonDown, buttonPressed)
+        self._irc = ircontrol(self._pi, 17, RemoteControl.irCallback, buttonState = self._buttonState, timeout = 5)
+        
+    def stop(self):
+        self._pi.stop()
+        self._daemon.kill()
+
+    def restart(self, name):
+        self.stop()
+        self.name = name
+        self.start()
     
 if __name__ == "__main__":
 ## initialization
@@ -866,14 +900,7 @@ if __name__ == "__main__":
     file_handler.setFormatter(logFormatter)
     logger.addHandler(file_handler)
     logger.debug(f"start radio")
-## initialize ircontrol
-    ircontrol.ReadHashes("/var/radio/remotecontrol/sony_RM-SED1.json")
-    daemon = Daemon("pigpio")
-    daemon.start()
-    
-    pi = pigpio.pi()
-    buttonState = ButtonState.Start(buttonDown, buttonPressed)
-    irc = ircontrol(pi, 17, irCallback, buttonState = buttonState, timeout=5)
+
 ## initialize display sizes    
     if options.fullscreen():
         info = pygame.display.Info()
@@ -911,6 +938,11 @@ if __name__ == "__main__":
     hexCol = radioPlayer.timeColor()
     timeColor = hexcolors.hexToRgb(hexCol) if hexCol != None else Colors.DARKRED
     monitor = Monitor.Monitor(delay=5.0)
+
+## initialize ircontrol
+    remoteControl = RemoteControl(radioPlayer.remoteControl())
+    remoteControl.start()
+
 ## initialize RadioEvents
 ##    radioPlayer.addPlayerStopEventHandler(mediaStopEventHandler)
     
@@ -991,6 +1023,7 @@ if __name__ == "__main__":
                         newBrightness = radioPlayer.brightness()
                         defImageWidth = radioPlayer.imageWidth()
                         monitor.setDimValue(newBrightness)
+                        remoteControl.restart(radioPlayer.remoteControl())
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
@@ -1041,8 +1074,7 @@ if __name__ == "__main__":
     pygame.quit()
     radioPlayer.stop()
     radioScheduler.shutdown()
-    pi.stop()
-    daemon.kill()
+    remoteControl.stop()
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     monitor.light()

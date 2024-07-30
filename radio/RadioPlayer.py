@@ -54,6 +54,9 @@ class RadioPlayer:
     def brightness(self):
         return int(self._senderData['brightness']) / 100
 
+    def remoteControl(self):
+        return self._senderData['remotecontrol']
+    
     def imageWidth(self):
         return int(self._senderData['imageWidth']) if 'imageWidth' in self._senderData else 64
     
