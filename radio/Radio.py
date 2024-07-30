@@ -1023,7 +1023,7 @@ if __name__ == "__main__":
                         newBrightness = radioPlayer.brightness()
                         defImageWidth = radioPlayer.imageWidth()
                         monitor.setDimValue(newBrightness)
-                        remoteControl.restart(radioPlayer.remoteControl())
+                        #remoteControl.restart(radioPlayer.remoteControl())
                     elif event.SettingsType == SettingsType.Sound:
                         changeSound(event.Filepath)
                 elif event.type == IrEvent:
