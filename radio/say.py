@@ -14,7 +14,7 @@ import urllib
 import time
 import locale
 from enum import Enum
-from WeatherCalculator import WeatherCalculator as Weatherman
+#from WeatherCalculator import WeatherCalculator as Weatherman
 from area import Area
 import asyncio
 import queue

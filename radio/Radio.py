@@ -20,7 +20,7 @@ import hexcolors
 from ipc import StatusServer
 from ircontrol import ircontrol, ButtonState
 from ircontrol import LastPressed
-from WeatherCalculator import WeatherCalculator as Weatherman
+#from WeatherCalculator import WeatherCalculator as Weatherman
 from area import Area
 from pygame.event import Event
 import math

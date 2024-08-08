@@ -2,7 +2,7 @@ import vlc
 import time
 import json
 import logging
-from playYoutube import getYoutubeStreamUrl
+#from playYoutube import getYoutubeStreamUrl
 from fileListRandomizer import shufflePlayList
 from Equalizer import Equalizer
 import threading
@@ -134,7 +134,9 @@ class RadioPlayer:
         else:
             url = sender["url"]
             if "youtube" in url:
-                url = getYoutubeStreamUrl(url)
+                print("youtube cannot be played. Sorry...")
+                return
+                #url = getYoutubeStreamUrl(url)
             self.playUrl(url)
 
     def playRandomized(self,url):

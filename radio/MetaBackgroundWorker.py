@@ -41,7 +41,7 @@ class MetaBackgroundWorker:
                 raise
             
         logging.debug("leave thread...")
-
+    
     @staticmethod
     def HasChanged() -> bool:
         return MetaBackgroundWorker.ChangeEvent.is_set()
