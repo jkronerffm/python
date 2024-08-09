@@ -45,6 +45,7 @@ import asyncio
 from Xlib.ext import randr
 import Monitor
 from time import mktime
+import AnsiColors
 
 pygame.init()
 
@@ -756,23 +757,24 @@ def weatherCallback(weather):
     os.remove(filepath)
 
 def sayWeather():
-    global active
-    global currentsender
-
-    if active:
-        radioPlayer.stop()
-        
-    if haveInternet():
-        try:
-            area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
-            logging.debug(f"sayWeather(area={area})")
-            weatherman = Weatherman(area, None)
-            freeSpeechForecast = Weatherman.HumanUnderstandableForecast(weatherman.run())
-            asyncio.run(say.say_multipleLineOutput(freeSpeechForecast, "de", radioPlayer))
-        except Exception as e:
-            logging.exception(f"an error has been raised: {e}. Please contact the developer!")
-    if active:
-        radioPlayer.play(currentsender['name'])
+    pass
+##    global active
+##    global currentsender
+##
+##    if active:
+##        radioPlayer.stop()
+##        
+##    if haveInternet():
+##        try:
+##            area = Area("Frankfurt am Main", "Germany", "Europe/Berlin", 50.11, 8.68)
+##            logging.debug(f"sayWeather(area={area})")
+##            weatherman = Weatherman(area, None)
+##            freeSpeechForecast = Weatherman.HumanUnderstandableForecast(weatherman.run())
+##            asyncio.run(say.say_multipleLineOutput(freeSpeechForecast, "de", radioPlayer))
+##        except Exception as e:
+##            logging.exception(f"an error has been raised: {e}. Please contact the developer!")
+##    if active:
+##        radioPlayer.play(currentsender['name'])
         
 def nextSender():
     global radioPlayer
@@ -1001,17 +1003,36 @@ if __name__ == "__main__":
                     logging.debug("quit pygame")
                     running=False
                     break;
-                elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
+                elif event.type == pygame.FINGERDOWN:
+                    fingerpos = event.pos if hasattr(event,'pos') else [event.x *screenWidth, event.y * screenHeight]
+                    if not check_click(fingerpos):
+                        active=True
+                    else:
+                        buttonDown=True
+                    break
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    logging.debug(f"radio event loop: event={event}")
                     if not check_click(event.pos):
                         active=True
                     else:
                         buttonDown=True
-                    break;
-                elif event.type == pygame.MOUSEMOTION or event.type == pygame.FINGERMOTION:
+                    break
+                elif event.type == pygame.MOUSEMOTION:
+                    if event.touch:
+                        fingerevent = pygame.event.Event(pygame.FINGERDOWN, {'pos': event.pos})
+                        pygame.event.post(fingerevent)
+                        break
+                        
                     if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
                         volume = get_VolumeValue(event.pos)
-                    break;
-                elif event.type == pygame.MOUSEBUTTONUP or event.type == pygame.FINGERUP:
+                    break
+                elif event.type == pygame.FINGERMOTION:
+                    if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
+                        volume = get_VolumeVale(event.pos)
+                    break
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    buttonDown = False
+                elif event.type == pygame.FINGERUP:
                     buttonDown = False
                 elif event.type == SettingsEvent:
                     if event.SettingsType == SettingsType.Waketime:
@@ -1063,6 +1084,11 @@ if __name__ == "__main__":
                 elif event.type == RadioEvent:
                     if event.PlayerEvent == PlayerEvent.MediaStopped:
                         radioPlayer.repeat(currentsender["name"])
+                else:
+                    clr = AnsiColors.Colors()
+                    bg = AnsiColors.BGColor.Red
+                    fg = AnsiColors.Color.White
+                    logging.debug(clr(fg, bg) + f"unhandled event: {event}" + AnsiColors.Colors.Reset)
             pygame.display.flip()
             clock.tick(60)
         except KeyboardInterrupt:

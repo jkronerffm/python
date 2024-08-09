@@ -229,6 +229,10 @@ class WeatherCalculator:
                 date = datetime.datetime.now()
                 
             sdate = self.formatDate(date)
+            if not hasattr(weather, "forecasts"):
+                logging.debug(f"get_weather: date={date}")
+                return None
+            
             forecast = next(weather.forecasts)
             astralCalculator = AstralCalculator(self._area, date)
             currentForecast = self.get_currentForecast(forecast)
@@ -278,6 +282,10 @@ class WeatherCalculator:
 
     @staticmethod
     def HumanUnderstandableForecast(weather):
+        if weather == None:
+            logging.warning("weather is not available")
+            return "weather is not available"
+        
         l = [f"Die Außentemperatur beträgt jetzt {weather['current']['temperature']}°C."]
         if abs(weather['current']['temperature'] - weather['current']['feelsLike']) > 3:
             l+= [f"Das fühlt sich an wie {weather['current']['feelsLike']}°C."]
@@ -299,6 +307,6 @@ if __name__ == "__main__":
                 latitude = 50.11,
                 longitude = 8.68)
     weatherCalculator = WeatherCalculator(area)
-    result = WeatherCalculator.HumanUnderstandableStatement(weatherCalculator.run())
+    result = WeatherCalculator.HumanUnderstandableForecast(weatherCalculator.run())
     logging.debug(f"result of WeatherCalculator:{result}")
     
