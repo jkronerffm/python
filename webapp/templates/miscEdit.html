@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="GET" action="/radio/misc/save">
+  <table>
+    <tr>
+      <td><label for="background">Hintergrund:</label>
+        <select id="background" name="background" onchange="changeBgPic(setImage);">
+          {% for image in imageList %}
+            <option value="{{ image }}"
+              {% if image == selectedImage %}
+                selected
+              {% endif %}
+            >{{ image }}</option>
+          {% endfor %}
+        </select>
+        <input type="button" id="addPic" name="addPic" value="..." onclick="document.getElementById('imageFile').click()">
+        <input type="file" style="display:none;" id="imageFile" onchange="saveBackgroundFile()" accept=".jpg, .jpeg, .png, .svg">
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <img src="{{ imageData }}" alt="{{ selectedImage }}" style="width:160px; height=100px;" id="backgroundImage"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input type="color" id="timecolor" name="timecolor" value="{{ timeColor }}"/>
+        <label for="timeColor">Farbe f&uuml;r Zeit</label>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="brightness">Gedämmte Helligkeit:</label><br>
+        <input type="range" id="brightness" name="brightness" min="0" max="100" value="{{ brightness }}" oninput="this.nextElementSibling.value = this.value"/>
+        <output>{{ brightness }}</output>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="imageWidth">Bildbreite(Sender):</label><br>
+        <input type="range" id="imageWidth" name="imageWidth" min="64" max="128" value="{{ imageWidth }}" oninput="this.nextElementSibling.value= this.value"/>
+        <output>{{ imageWidth }}</output>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <fieldset>
+          <legend>Ruhezeit</legend>
+            <table>
+              <tr>
+                <td>
+                  <label for="offTime">Anfang:</label>
+                </td>
+                <td>
+                  <label for="onTime">Ende:</label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <input type="time" id="offTime" name="offTime" value="{{ offTime }}"/>
+                </td>
+                <td>
+                  <input type="time" id="onTime" name="onTime" value="{{ onTime }}"/>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <label for="delayOff">
+                    Verz&ouml;gerung bis Auschalten:
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <input type="number" min="5" max="300" id="delayOff" name="delayOff" value="{{ delayOff }}" style="width:68px"/> Sekunden
+                </td>
+              </tr>
+            </table>
+        </fieldset>
+      </td>
+    </tr>
+    <!--
+    <tr>
+      <td><label for="timeSize">Gr&ouml;&szlig;e</label></td>
+      <td>
+        <select id="timeSize" name="timeSize">
+          {% for size in sizeList %}
+          <option value="{{ size }}"
+            {% if size==selectedTimeSize %}
+            selected
+            {% endif %}
+          >{{ size }}</option>
+          {% endfor %}
+        </select>
+      </td>
+    </tr>
+    -->
+    <tr>
+      <td colspan="3" style="text-align:center">
+        <input class="stylebutton" type="submit" id="save" name="save" value="Speichern" onclick="location.assign('/misc/save')">
+        <input class="stylebutton" type="button" id="back" name="back" value="Zur&uuml;ck" onclick="location.assign('/')"/>
+      </td>
+    </tr>
+  </table>
+</form>
+{% endblock %}

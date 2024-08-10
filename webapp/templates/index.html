@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block content %}
+<table>
+  <tr>
+    <td>Status:</td>
+    <td>
+      {% if status["running"] %}
+      L&auml;uft
+      {% else %}
+      L&auml;uft nicht
+      {% endif %}
+    </td>
+  </tr>
+  <tr>
+    <td>Radio:</td>
+    <td>
+      {% if status["active"] %}
+      L&auml;uft
+      {% else %}
+      L&auml;uft nicht
+      {% endif %}
+    </td>
+  </tr>
+  <tr>
+    <td>Aktueller Sender</td>
+    <td>{{ status["current_sender"] }}</td>
+  </tr>
+  <tr>
+    <td>Lautst&auml;rke</td>
+    <td>{{ status["volume"] }}</td>
+  </tr>
+  <tr>
+    <td>Equalizer:</td>
+    <td>{{ status["equalizer"] }}</td>
+  </tr>
+  <tr>
+    <td>N&auml;chste Weckzeit:</td>
+    <td>{{ status["next_runtime"] }}</td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <input class="stylebutton" type="button" id="sender" value="Radio" onClick="location.assign('/radio/sender')"/>
+      <input class="stylebutton" type="button" id="waketime" value="Wecker" onClick="location.assign('/radio/waketime')"/>
+      <input class="stylebutton" type="button" id="sound" value="Sound" onclick="location.assign('/radio/sound/edit')"/>
+      <input class="stylebutton" type="button" id="misc" value="Sonstiges" onclick="location.assign('/radio/misc')"/>
+    </td>
+  </tr>
+</table>
+{% endblock %}

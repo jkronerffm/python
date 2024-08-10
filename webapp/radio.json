@@ -1,0 +1,47 @@
+{
+    "background": "background.jpg",
+    "sender": [
+        {
+            "id": "05b86c5f-66d0-472f-b3d5-22c878061496",
+            "image": "file:///var/radio/pics/hr1.png",
+            "name": "hr1",
+            "url": "http://metafiles.gl-systemhaus.de/hr/hr1_2.m3u"
+        },
+        {
+            "id": "4dc8e6b7-bf11-49da-bd91-b659f33cdc8f",
+            "image": "file:///var/radio/pics/hr3.png",
+            "name": "hr3",
+            "url": "http://metafiles.gl-systemhaus.de/hr/hr3_2.m3u"
+        },
+        {
+            "id": "4d1b207f-b7b6-4de8-882f-0b718c00aff5",
+            "image": "file:///var/radio/pics/ffh.svg",
+            "name": "ffh",
+            "url": "http://streams.ffh.de/radioffh/mp3/hqlivestream.m3u"
+        },
+        {
+            "id": "b8c229f9-c752-4e75-9c13-11ba654d7d03",
+            "image": "file:///var/radio/pics/radio_bob.png",
+            "name": "Bob",
+            "url": "http://streams.radiobob.de/100/mp3-128/streams.radiobob.de/play.m3u"
+        },
+        {
+            "id": "501caf65-19af-4a70-a830-9d30f1060bf9",
+            "image": "file:///var/radio/pics/radiomaria.jpeg",
+            "name": "radio maria",
+            "url": "http://dreamsiteradiocp.com:8060"
+        },
+        {
+            "id": "a23970d8-d441-41ed-bc24-6642c80f381e",
+            "image": "file:///var/radio/pics/stereojoya.jpg",
+            "name": "stereo joya",
+            "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/XEJP_FMAAC_SC"
+        },
+        {
+            "id": "79dc4759-4bac-4435-97c8-c309358c5a24",
+            "image": "file:///var/radio/pics/playlist.png",
+            "name": "my music",
+            "url": "file:///var/radio/music/"
+        }
+    ]
+}

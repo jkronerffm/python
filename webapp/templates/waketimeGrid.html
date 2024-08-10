@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<table>
+  <tr>
+    {% for h in headerList %}
+      <th>{{ h }}</th>
+    {% endfor %}
+  </tr>
+    {% for job in jobList %}
+    <tr class="buttonrow">
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["runtimeDay"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["runtimeTime"] }}</td>
+      <td style="text-align:right; width: 3em; word-break: break-word;" onclick="editJob('{{ job["name"] }}')">{{ job["duration"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">{{ job["sender"] }}</td>
+      <td onclick="editJob('{{ job["name"] }}')">
+      {% if job["timeannouncement"] is defined and not empty %}
+        {{ job["timeannouncement"] }}
+      {% endif %}
+      </td>
+      <td>
+          <input type="checkbox" name="active" {{ job["active"] }} id="{{ job["name"] }}" onclick="setActive('{{ job["name"] }}')">
+      </td>
+    </tr>
+    {% endfor %}
+  <tr>
+    <td colspan="5" style="text-align:center;">
+      <input class="stylebutton" type="button" value="+" title="Neue Weckzeit hinzufügen" onclick="location.assign('/radio/waketime/add')"></input><input class="stylebutton" type="button" title="Zur&uuml;ck zu Einstellungen" value="Zur&uuml;ck" onclick="location.assign('/')">
+    </td>
+  </tr>
+</table>
+
+{% endblock %}

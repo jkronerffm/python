@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form action="/radio/sender/save" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="id" id="id" value="{{ senderId }}">
+  <table>
+    <tr>
+      <td>Name:</td>
+      <td><input type="text" id="name" name="name" value="{{ name }}"></td>
+    </tr>
+     <tr id="urlinput">
+      <td>Adresse:</td>
+      <td><input type="text" id="url" name="url" value="{{ url }}" oninput="onChangeSenderUrl()"></td>
+    </tr>
+    <tr id="shuffleRow">
+      <td colspan="2">
+        <input type="checkbox" id="shuffle" name="shuffle" 
+        {%if shuffle %}
+        checked="checked"
+        {% endif %}
+        >
+        <script type="text/javascript">
+          var url = document.getElementById("url");
+          var shuffle = document.getElementById("shuffle");
+          shuffle.disabled = !(url.value.startsWith("file://"));
+         </script>
+        <label for="shuffle">Shuffle</label>
+      </td>
+    </tr>
+    <tr>
+      <td>Bild:</td>
+      <td id="imagecell"><input type="file" id="imageFile" name="imageFile" value="{{ image }}", accept=".jpg, .jpeg, .png, .svg"/>
+      <input type="hidden" id="imagefilepath" name="imagefilepath" value=""/>
+      {% if imageData is defined and not empty %}
+      <img id="image" style="width:32px; height:32px" src="{{ imageData }}"/>
+      {% endif %}
+      </td>
+      <script type="text/javascript">
+        var elem = document.getElementById('imageFile');
+        elem.addEventListener("cancel", () => {
+            console.log("Cancelled");
+        });
+        elem.addEventListener("change", (event) => {
+            img = document.getElementById("image")
+            td = document.getElementById("imagecell")
+            console.log("Selected: ", event)
+            if (img == undefined) {
+                img = document.createElement("img");
+                img.setAttribute('id', 'image')
+            }
+            if (elem.files.length == 1) {
+                src = URL.createObjectURL(elem.files[0])
+                img.src = src
+                img.alt = elem.files[0].name;
+                img.style="width:32px; height:32px;"
+                fp = document.getElementById("imagefilepath");
+                fp.setAttribute('value',src);
+                td.appendChild(img);
+            }
+        });
+      </script>
+    </tr>
+    <tr>
+      <td colspan="2" style="text-align:center;">
+        <input class="stylebutton" type="submit" id="submit" value="Speichern" value="Upload">
+        <input class="stylebutton" type="button" id="back" value="Zur&uuml;ck" onclick="window.location.assign('/radio/sender/')">
+        {% if canDelete %}
+            <input class="stylebutton" type="button" id="delete" value="-" onclick="window.location.assign('/radio/sender/delete?id={{ senderId }}')">
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+</form>
+{% endblock %}

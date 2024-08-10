@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <title>{{ title }}</title>
+  </head>
+  <body>
+       <div class="row">
+        <div  class="col-3">
+          <nav class="navbar bg-light">
+            <ul class="nav navbar-nav" id="pills-tab" role="tablist">
+              {% for name, val in tabs.items() %}
+                {% if val['attr'] == active %}
+                  <li class="nav-item">
+                    <a class="nav-link active" id="{{ val['attr'] }}" data-toggle="pill" href="{{ val['href'] }}" role="tab"
+                       aria-controls="{{ val['attr'] }}_c" aria-selected="true">{{ name }}
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="nav-item">
+                    <a class="nav-link" id="{{ val['attr'] }}" href="{{ val['href'] }}" aria-selected="false">{{ name }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </nav>
+        </div>
+        <div class="col-9">
+          <h1>{{ header }}</h1>
+          <div class="container" id="pills-tabContent">
+            {% block content %}
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+  </body>
+</html>

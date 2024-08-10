@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<table class="ch_list">
+  <thead>
+    <tr>
+      {% for headcol in headerlist%}
+      <th
+      {% if loop.index == 1 %}
+        class="ch_name"
+      {% elif loop.index == 2 %}
+        class="ch_url"
+      {% else %}
+        class="ch_image"
+      {% endif %}
+      >{{ headcol }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for sender in senderList %}
+    <tr class='buttonrow' onclick="editSender('{{ sender["id"] }}')">
+      <td class="ch_name">
+        {{ sender["name"] }}
+      </td>
+      <td class="ch_url">
+        <div style="overflow:hidden; white-space: nowrap; text-overflow: ellipsis">
+          {{ sender["url"] }}
+        </div>
+      </td>
+      <td class="ch_image">
+         {% if imageList is defined and imageList|length > 0 %}
+        <img src="{{ imageList.pop(0) }}" alt="{{ sender["image"] }}" style="width: 32px; height: 32px;"/>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td colspan="3" style="text-align:center">
+        <input class="stylebutton" type="button" id="add" name="add" value="+"/ onclick="location.assign('/radio/sender/add')">
+        <input class="stylebutton" type="button" id="back" name=back" value="Zur&uuml;ck" onclick="location.assign('/radio')"/>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+{% endblock %}

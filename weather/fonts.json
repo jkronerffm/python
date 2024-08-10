@@ -1,0 +1,26 @@
+{
+    "arial14": {
+        "name": "arial",
+        "size": 14,
+        "bold": true,
+        "italic": false
+        },
+    "arial18": {
+        "name": "arial",
+        "size": 18,
+        "bold": true,
+        "italic": false
+    },
+    "arial64": {
+        "name": "arial",
+        "size": 64,
+        "bold": true,
+        "italic": false
+    },
+    "arial128": {
+        "name": "arial",
+        "size": 128,
+        "bold": true,
+        "italic": false
+    }
+}

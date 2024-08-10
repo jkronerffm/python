@@ -3,7 +3,7 @@ try:
 except:
     import http.client as httplib
 
-def have_internet(uri="8.8.8.8") -> bool:
+def haveInternet(uri="8.8.8.8") -> bool:
     conn = httplib.HTTPSConnection(uri, timeout=5)
     try:
         conn.request("HEAD", "/")
@@ -14,7 +14,7 @@ def have_internet(uri="8.8.8.8") -> bool:
         conn.close()
 
 if __name__ == "__main__":
-    if have_internet():
+    if haveInternet():
         print("Internet is available :-)")
     else:
         print("No internet available :-(")
