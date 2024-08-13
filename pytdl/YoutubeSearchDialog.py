@@ -2,6 +2,7 @@ from YoutubeSearchBase import Ui_Dialog
 from pytube import YouTube
 from ytsearch import YoutubeSearch
 from ytdl import YoutubeDownload
+from VideoDownload import VideoDownload
 from PyQt5 import QtWidgets, QtCore, QtGui,QtMultimedia, QtMultimediaWidgets
 from PyQt5.QtGui import (QImage, QPixmap, QPainter, QColor)
 from PyQt5.QtWidgets import (QApplication,
@@ -81,8 +82,9 @@ class YoutubeSearchDialog(Ui_Dialog):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         for item in checkedItems:
             logging.debug(item.title)
-            ytdl = YoutubeDownload(youtube=item)
-            ytdl.loadAudio()
+            print(f"add item with {item.video_id} to YouTubeDownload")
+            videoDownload = VideoDownload(videoId = item.video_id, downloadPath="~/Music/",audioFormat="mp3")
+            videoDownload.run()
         QApplication.restoreOverrideCursor()
 
     def onLoadVideo(self):
@@ -93,8 +95,8 @@ class YoutubeSearchDialog(Ui_Dialog):
 
         for item in checkedItems:
             logging.debug(item.title)
-            ytdl = YoutubeDownload(youtube=item)
-            ytdl.loadVideo()
+            videoDownload = VideoDownload(videoId = item.videoId, downloadPath="~/Video/")
+            videoDownload.run()
         QApplication.restoreOverrideCursor()
 
     def showVideo(self, item):

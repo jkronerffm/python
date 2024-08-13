@@ -6,7 +6,7 @@ class YoutubeDownload:
     def __init__(self, url = None, youtube = None):
         if (url == None) and (youtube == None):
             raise AttributeError()
-        
+        print(f"YoutubeDownload(url={url}, youtube={youtube})")
         if (url != None):
             self._youtube = YouTube(url)
         else:
@@ -83,8 +83,12 @@ class YoutubeDownload:
 ##        return newFilename
         
 if __name__ == "__main__":
-    url = sys.argv[1]
-    ytl = YoutubeDownload(url)
+    if sys.argv[1].startswith("https:"):
+        url = sys.argv[1]
+        ytl = YoutubeDownload(url)
+    else:
+        youtube = YouTube(f"https://youtube.com/watch?v={sys.argv[1]}")
+        ytl = YoutubeDownload(youtube=youtube)
     ytl.loadAudio()
         
     

@@ -26,7 +26,7 @@ class YoutubeSearch:
         return image
 
 def listSearch(result):
-    print(result.title)
+    print(f"title: {result.title}, result={result}")
     
 if __name__ == "__main__":
     for i in range(1, len(sys.argv)):
