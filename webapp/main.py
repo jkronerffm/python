@@ -13,7 +13,9 @@ from urllib.request import url2pathname
 from urllib.parse import urlparse
 import uuid
 import pathlib
-
+from LogFormatter import LogFormatter
+from logging import handlers
+from logging.handlers import RotatingFileHandler
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 @app.route("/")   
@@ -320,5 +322,17 @@ def saveBackgroundImage():
     return jsonify(background= backgroundImages)
   
 if __name__ == "main":
-    logging.basicConfig(level="DEBUG")
+    logger = logging.getLogger()
+    
+    logger.setLevel(level="DEBUG")
+    logFormatter = LogFormatter()
+    console_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(console_handler)
+    console_handler.setFormatter(logFormatter)
+    logDir = "/var/radio/log"
+    logFilename = "webapp.log"
+    logFilepath = os.path.join(logDir, logFilename)
+    file_handler = RotatingFileHandler(logFilepath, mode='w', maxBytes=4096, backupCount=5)
+    file_handler.setFormatter(logFormatter)
+    logger.addHandler(file_handler)
     
