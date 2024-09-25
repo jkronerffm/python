@@ -710,6 +710,7 @@ def buttonPressed(buttonCode):
 
 def mediaStopEventHandler(event, player):
     global radioPlayer
+    logging.debug("###### mediaStopEventHandler")
     event = pygame.event.Event(RadioEvent, {'PlayerEvent': PlayerEvent.MediaStopped })
     pygame.event.post(event)
     
@@ -898,7 +899,7 @@ if __name__ == "__main__":
     logDir = "/var/radio/log"
     logFilename = "radio.log"
     logFilepath = os.path.join(logDir, logFilename)
-    file_handler = RotatingFileHandler(logFilepath, maxBytes=4096, backupCount=5)
+    file_handler = RotatingFileHandler(logFilepath, maxBytes=8192, backupCount=5)
     file_handler.setFormatter(logFormatter)
     logger.addHandler(file_handler)
     logger.debug(f"start radio")
@@ -946,7 +947,7 @@ if __name__ == "__main__":
     remoteControl.start()
 
 ## initialize RadioEvents
-##    radioPlayer.addPlayerStopEventHandler(mediaStopEventHandler)
+#    radioPlayer.addPlayerStopEventHandler(mediaStopEventHandler)
     
 ## initialize radioScheduler    
     radioScheduler = RadioScheduler(confFilepathWaketime)
@@ -1011,7 +1012,6 @@ if __name__ == "__main__":
                         buttonDown=True
                     break
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    logging.debug(f"radio event loop: event={event}")
                     if not check_click(event.pos):
                         active=True
                     else:
@@ -1082,15 +1082,11 @@ if __name__ == "__main__":
                             logging.debug(f"IRControl-->VolumeDown: decrease volume")
                             toggleVolume(False)
                 elif event.type == RadioEvent:
-                    if event.PlayerEvent == PlayerEvent.MediaStopped:
-                        radioPlayer.repeat(currentsender["name"])
-                else:
-                    clr = AnsiColors.Colors()
-                    bg = AnsiColors.BGColor.Red
-                    fg = AnsiColors.Color.White
-                    logging.debug(clr(fg, bg) + f"unhandled event: {event}" + AnsiColors.Colors.Reset)
+                    logging.debug("####### MediaStopped")
+##                    if event.PlayerEvent == PlayerEvent.MediaStopped:
+##                        radioPlayer.repeat(currentsender["name"])
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(30)
         except KeyboardInterrupt:
             event = pygame.event.Event(pygame.QUIT)
             pygame.event.post(event)

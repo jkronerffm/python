@@ -12,15 +12,17 @@ from ctypes import *
 class RadioPlayer:
     CurrSender = ""
     CurrTitle = ""
-    LocalList = "wake up"
+    LocalList = "wakeUp"
+    BlockEvents = True
     
     def __init__(self, configFile):
         self._senderData = {}
         self.readConfigFile(configFile)
         self._instance = vlc.Instance()
-        self._player = self._instance.media_list_player_new()
+        self._player = None #self._instance.media_list_player_new()
         self._equalizerIndex = -1
         self._playerStopEventHandler = []
+        self._playerNextItemHandler = []
         self._stopping = False
 
     @property
@@ -32,13 +34,41 @@ class RadioPlayer:
         self._stopping = value
         
     def addPlayerStopEventHandler(self, eventHandler):
+        logging.debug("####### addPlayerStopEventHandler()")
         self._playerStopEventHandler.append(eventHandler)
 
-    def firePlayerStop(self, event, player):
-        self.stopping = True
-        for eventHandler in self._playerStopEventHandler:
-            eventHandler(event, player)
+    def addPlayerListNextItemHandler(self, eventHandler):
+        self._playerNextItemHandler.append(eventHandler)
+        
+    def fireListPlayerPlayed(self, event, player, senderName):
+        logging.debug(f"####### RadioPlayer.fireListPlayerPlayed {senderName}")
+##        for eventHandler in self._playerStopEventHandler:
+##            eventHandler(event, player)
+        
+    def fireListEndReached(self, event, player, senderName):
+        logging.debug(f"####### RadioPlayer.fireListEndReached  {senderName}")
+
+    def fireListPlayerNextItemSet(self, event, player, senderName):
+        logging.debug(f"####### RadioPlayer.fireListPlayerNextItemSet {senderName}")
+        for eventHandler in self._playerNextItemHandler:
+            eventHandler(player)
             
+    def setMediaPlayerStopEvent(self, senderName):
+        if not RadioPlayer.BlockEvents:
+            player = self.player()
+            em = player.event_manager()
+            logging.debug("###### setMediaPlayerStopEvent()")
+            em.event_attach(vlc.EventType.MediaListEndReached, self.fireListEndReached, player, senderName)
+            em.event_attach(vlc.EventType.MediaListPlayerPlayed, self.fireListPlayerPlayed, player, senderName)
+            em.event_attach(vlc.EventType.MediaListPlayerNextItemSet, self.fireListPlayerNextItemSet, player, senderName)
+        
+    def clearMediaPlayerStopEvent(self):
+        mediaPlayer = self.player()
+        eventManager = mediaPlayer.event_manager()
+        eventManager.event_detach(vlc.EventType.MediaListEndReached)
+        eventManager.event_detach(vlc.EventType.MediaListPlayerPlayed)
+        eventManager.event_detach(vlc.EventType.MediaListPlayerNextItemSet)
+
     def equalizerIndex(self):
         return self._equalizerIndex
 
@@ -73,7 +103,7 @@ class RadioPlayer:
         return self._senderData['sender']
 
     def repeat(self, senderName):
-##        self.stop()
+        self.stop()
         self.play(senderName)
 
     def getNextSender(self, senderName):
@@ -98,15 +128,6 @@ class RadioPlayer:
             if senderItem["url"].endswith(name):
                 return senderItem
         return None
-
-    def setMediaPlayerStopEvent(self):
-        em = self.mediaPlayer().event_manager()
-        em.event_attach(vlc.EventType.MediaPlayerStopped, self.firePlayerStop, self.mediaPlayer())
-        
-    def clearMediaPlayerStopEvent(self):
-        mediaPlayer = self.mediaPlayer
-        eventManager = mediaPlayer().event_manager()
-        eventManager.event_detach(vlc.EventType.MediaPlayerStopped)
         
     def currentSender(self):
         return self._currentSender
@@ -114,6 +135,7 @@ class RadioPlayer:
     def player(self):
         if self._player == None:
             self._player = self._instance.media_list_player_new()
+#        logging.debug(f"player({self._player})")
         return self._player
 
     def mediaPlayer(self):
@@ -126,11 +148,13 @@ class RadioPlayer:
         logging.debug("play(senderName=%s)" % (senderName))
         sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName(RadioPlayer.LocalList)
         logging.debug(f"play(sender={sender}, shuffle={'shuffle' in sender and sender['shuffle']})")
-#        self.clearMediaPlayerStopEvent()
+        self.stop()
+        self.clearMediaPlayerStopEvent()
+        self._player = None
         
+        self.setMediaPlayerStopEvent(senderName)
         if "shuffle" in sender and sender["shuffle"]:
             self.playRandomized(sender["url"])
-#            self.setMediaPlayerStopEvent()
         else:
             url = sender["url"]
             if "youtube" in url:
@@ -138,6 +162,7 @@ class RadioPlayer:
                 return
                 #url = getYoutubeStreamUrl(url)
             self.playUrl(url)
+        logging.debug(f"play -> setMediaPlayerStopEvent({senderName}) BlockEvents={RadioPlayer.BlockEvents}")
 
     def playRandomized(self,url):
         songs = shufflePlayList(url)
@@ -161,6 +186,7 @@ class RadioPlayer:
             media = self._instance.media_new(url)
             mediaList.add_media(media)
         self.player().set_media_list(mediaList)
+        logging.debug("playUrl()-> call setMediaPlayerStopEvent()")
         self.player().play()
         if blocking:
             time.sleep(1)
@@ -178,6 +204,9 @@ class RadioPlayer:
         self.player().stop()
         self.stopping = False
 
+    def next(self):
+        self.player().next()
+        
     def getSenderByName(self, senderName):
         for sender in self.sender():
             if sender["name"] == senderName:
@@ -297,6 +326,15 @@ def titleChanged(event):
     
 a= ctypes.create_string_buffer(b'\000' * 2048)
 
+def nextItem(player):
+    global radioPlayer
+    logging.debug("nextItem")
+    time.sleep(3)
+    logging.debug("--> stop")
+    radioPlayer.stop()
+    logging.debug("--> next")
+    radioPlayer.next()
+    logging.debug("leave nextItem")
 
 if __name__ == "__main__":
     stopEvent = threading.Event()
@@ -320,7 +358,16 @@ if __name__ == "__main__":
     print(dir(radioPlayer.mediaPlayer()))
 ##    radioPlayer.mediaPlayer().video_set_callbacks(_lockcb, _unlockcb, _displaycb, a)
 ##    radioPlayer.mediaPlayer().audio_set_callbacks(play=playcb, pause=None, resume=None, flush=None, drain=None, opaque=None)
+    nextSender = radioPlayer.getNextSender("stereo joya")
+    nextSender = radioPlayer.getNextSender(nextSender['name'])
+#    nextSender = radioPlayer.getNextSender(nextSender['name'])
+    logging.debug(f"play {nextSender}")
+    radioPlayer.setVolume(50)
+    RadioPlayer.BlockEvents = False
+    radioPlayer.addPlayerListNextItemHandler(nextItem)
+    
     radioPlayer.play(nextSender['name'])
+    logging.debug("wait for interrupt...")
     while True:
         try:
              time.sleep(1)
