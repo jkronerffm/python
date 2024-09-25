@@ -326,9 +326,9 @@ if __name__ == "main":
     
     logger.setLevel(level="DEBUG")
     logFormatter = LogFormatter()
-    console_handler = logging.StreamHandler(sys.stdout)
-    logger.addHandler(console_handler)
-    console_handler.setFormatter(logFormatter)
+#    console_handler = logging.StreamHandler(sys.stdout)
+#    logger.addHandler(console_handler)
+#    console_handler.setFormatter(logFormatter)
     logDir = "/var/radio/log"
     logFilename = "webapp.log"
     logFilepath = os.path.join(logDir, logFilename)
