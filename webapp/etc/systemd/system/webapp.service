@@ -1,0 +1,14 @@
+[Unit]
+Description=webapp
+After=network.target
+StartLimitIntervalSec=5
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+User=root
+ExecStart=/var/radio/bin/webapp.sh --debug
+
+[Install]
+WantedBy=multi-user.target
