@@ -9,6 +9,18 @@ import threading
 import ctypes
 from ctypes import *
 
+class VlcPlayerFactory:
+    Player = None
+    
+    @staticmethod
+    def createPlayer(vlcInstance):
+        if VlcPlayerFactory.Player != None:
+            VlcPlayerFactory.Player.stop()
+            VlcPlayerFactory.Player = None
+        VlcPlayerFactory.Player = vlcInstance.media_list_player_new()
+
+        return VlcPlayerFactory.Player
+
 class RadioPlayer:
     CurrSender = ""
     CurrTitle = ""
@@ -42,8 +54,8 @@ class RadioPlayer:
         
     def fireListPlayerPlayed(self, event, player, senderName):
         logging.debug(f"####### RadioPlayer.fireListPlayerPlayed {senderName}")
-##        for eventHandler in self._playerStopEventHandler:
-##            eventHandler(event, player)
+        for eventHandler in self._playerStopEventHandler:
+            eventHandler(event, player)
         
     def fireListEndReached(self, event, player, senderName):
         logging.debug(f"####### RadioPlayer.fireListEndReached  {senderName}")
@@ -134,7 +146,7 @@ class RadioPlayer:
 
     def player(self):
         if self._player == None:
-            self._player = self._instance.media_list_player_new()
+            self._player = VlcPlayerFactory.createPlayer(self._instance)
 #        logging.debug(f"player({self._player})")
         return self._player
 
@@ -148,9 +160,8 @@ class RadioPlayer:
         logging.debug("play(senderName=%s)" % (senderName))
         sender = self.getSenderByName(senderName) if self.hasSenderWithName(senderName) else self.getSenderByName(RadioPlayer.LocalList)
         logging.debug(f"play(sender={sender}, shuffle={'shuffle' in sender and sender['shuffle']})")
-        self.stop()
         self.clearMediaPlayerStopEvent()
-        self._player = None
+        self._player = VlcPlayerFactory.createPlayer(self._instance)
         
         self.setMediaPlayerStopEvent(senderName)
         if "shuffle" in sender and sender["shuffle"]:
@@ -166,7 +177,7 @@ class RadioPlayer:
 
     def playRandomized(self,url):
         songs = shufflePlayList(url)
-        self.stop()
+#        self.stop()
         mediaList = self._instance.media_list_new()
         for song in songs:
             media = self._instance.media_new(song)
