@@ -886,7 +886,20 @@ def show_mouse(mode):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
     elif mode == 2: # show hand
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-        
+
+def mouseOffCb():
+    global mouseScheduler
+    logging.debug("#### mouseOffCb")
+    show_mouse(0)
+    schedule.clear('mouseOff')
+    
+def init_mouseScheduler(mode, mouseScheduler):
+    logging.debug("#### init_mouseScheduler")
+    show_mouse(mode)
+    mouseOffJob = schedule.every(3).seconds.tag("mouseOff")
+    mouseScheduler.addJob((mouseOffJob, "mouseOff"))
+    mouseScheduler.addActionCallback("mouseOff", mouseOffCb)
+    
 if __name__ == "__main__":
 ## initialization
 ## get commandline params
@@ -993,6 +1006,8 @@ if __name__ == "__main__":
     monitor.setDimValue(radioPlayer.brightness())
     monitor.dim()
     show_mouse(0)
+    mouseScheduler = SimpleScheduler()
+    mouseScheduler.start()
     RadioPlayer.BlockEvents = False
     
 ## start SimpleScheduler for Monitor
@@ -1016,7 +1031,7 @@ if __name__ == "__main__":
                     running=False
                     break;
                 elif event.type == pygame.FINGERDOWN:
-                    show_mouse(2)
+                    init_mouseScheduler(2, mouseScheduler)
                     fingerpos = event.pos if hasattr(event,'pos') else [event.x *screenWidth, event.y * screenHeight]
                     if not check_click(fingerpos):
                         active=True
@@ -1024,7 +1039,7 @@ if __name__ == "__main__":
                         buttonDown=True
                     break
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    show_mouse(1)
+                    init_mouseScheduler(1, mouseScheduler)
                     if not check_click(event.pos):
                         active=True
                     else:
@@ -1044,10 +1059,8 @@ if __name__ == "__main__":
                         volume = get_VolumeVale(event.pos)
                     break
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    show_mouse(0)
                     buttonDown = False
                 elif event.type == pygame.FINGERUP:
-                    show_mouse(0)
                     buttonDown = False
                 elif event.type == SettingsEvent:
                     if event.SettingsType == SettingsType.Waketime:
@@ -1110,6 +1123,7 @@ if __name__ == "__main__":
     switchMonitor(on = True)
     pygame.quit()
     radioPlayer.stop()
+    mouseScheduler.stop()
     radioScheduler.shutdown()
     remoteControl.stop()
     if options.profiling():

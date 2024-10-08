@@ -28,16 +28,16 @@ class SimpleScheduler:
         self.actionCallbacks[action] = callback
         
     def addJob(self,job):
-        logging.debug(f"{self.__class__.__name__}.addJob(job={job})")
         self.jobs.append(job)    
         job[0].do(self.job,job[1])
+        logging.debug(f"{self.__class__.__name__}.addJob(job={job})")
         return job[0]
 
     def addJobs(self, job):
-        logging.debug(f"{self.__class__.__name__}.addJob(job={job})")
         result = None
         for aJob in job[0]:
             result = self.addJob((aJob, job[1]))
+        logging.debug(f"{self.__class__.__name__}.addJob(job={job})")
         return result
                         
     def job(self, action):
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         now = datetime.datetime.now().strftime("%H:%M:%S")
         print(f"jobCb(now={now},action={action})")
         if action == "wait":
-            schedule.clear('waiting')
+            schedule.clear('wait')
 
     def onCb():
         now = datetime.datetime.now().strftime("%H:%M:%S")
@@ -97,9 +97,10 @@ if __name__ == "__main__":
     nowon = (now + on).strftime("%H:%M:%S")
     nowoff = (now + off).strftime("%H:%M:%S")
     print(nowon, nowoff)
-    waitjob = schedule.every(5).seconds.tag('waiting')
+    waitjob = schedule.every(5).seconds.tag('wait')
     print(waitjob)
     scheduler = SimpleScheduler()
+    scheduler.start()
     scheduler.addJob((waitjob,'wait'))
     scheduler.addCallback(jobCb)
     offJob = schedule.every().day.at(nowoff)
@@ -110,7 +111,6 @@ if __name__ == "__main__":
     print(onJob)
     scheduler.addJob((onJob, "on"))
     scheduler.addActionCallback("on", onCb)
-    scheduler.start()
     print(f"wait since {datetime.datetime.now()}")
     time.sleep(3*30)
     print(f"waiting is over at {datetime.datetime.now()}")
