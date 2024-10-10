@@ -1,9 +1,8 @@
 from ytsearch import YoutubeSearch
-from PIL import Image, ImageQt
-from PIL.ImageQt import ImageQt
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtGui import (QImage, QPixmap, QPainter, QColor)
 from PyQt5.QtCore import (Qt, QSize, QThread)
+from PIL import Image, ImageQt
 from io import BytesIO
 from time import sleep
 import requests, sys, logging
@@ -35,13 +34,31 @@ class ImageLoaderThread(QThread):
             
 class ImageLoader:
     @staticmethod
+    def ImageToPixmap(im):
+        if im.mode == "RGB":
+            r, g, b = im.split()
+            im = Image.merge("RGB", (b, g, r))
+        elif  im.mode == "RGBA":
+            r, g, b, a = im.split()
+            im = Image.merge("RGBA", (b, g, r, a))
+        elif im.mode == "L":
+            im = im.convert("RGBA")
+        # Bild in RGBA konvertieren, falls nicht bereits passiert
+        im2 = im.convert("RGBA")
+        data = im2.tobytes("raw", "RGBA")
+        qim = QtGui.QImage(data, im.size[0], im.size[1], QtGui.QImage.Format_ARGB32)
+        pixmap = QtGui.QPixmap.fromImage(qim)
+        return pixmap
+    
+    @staticmethod
     def LoadPixmap(url, size = None):
         logging.debug("LoadPixmap(url=%s, size=%s)" % (url, size))
         image = ImageLoader.LoadWebImage(url)
-        qim = ImageQt(image)
-        if (qim == None):
-            raise Exception("ImageQt failed!")
-        pix = QPixmap.fromImage(qim)
+##        qim = None #ImageQt.Image(image)
+##        if (qim == None):
+##            raise Exception("ImageQt failed!")
+##        pix = QPixmap.fromImage(qim)
+        pix = ImageLoader.ImageToPixmap(image)
         if (size != None):
             mask = QPixmap(size)
             mask.fill(QtGui.QColor(255,255,255,0))
