@@ -39,15 +39,20 @@ class VideoDownload:
             raise RuntimeError("VideoId is not initialized")
 
         return f"https://youtube.com/watch?v={self.videoId}"
-
+    
+    @property
+    def command(self):
+#        return "youtube-dl"
+        return "yt-dlp"
+    
     def _getCommand(self):
-        command = f"yt-dlp {self.url}"
+        command = f"{self.command} {self.url}"
         command += f" -x --audio-format {self.audioFormat}" if self.audioFormat != None else ""
         command += f" -P {self.downloadPath}" if self.downloadPath != None else ""
         return command
     
     def _getTitle(self):
-        command = f"yt-dlp --print \"%(title)s\" {self.url}"
+        command = f"{self.command} --print \"%(title)s\" {self.url}"
         self._title = os.popen(command).read()
         return self._title
         
