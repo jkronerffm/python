@@ -505,75 +505,15 @@ def enableScreenSaver(enable = True):
     pygame.display.set_allow_screensaver(enable)
     
 def toggleMonitor():
-    global monitorScheduler
-    global monitorOffByScheduler
     try:
-        logging.debug(f"toggleMonitor(monitorScheduler={monitorScheduler})")
         monitorClient = Monitor.Client.GetInstance()
         logging.debug("toggleMonitor(): {monitorClient} was created")
         toggled = bool(monitorClient.toggle())
         enable = not toggled
-        logging.debug(f"toggleMonitor(toggled={type(toggled)}({toggled}), enable={enable}, monitorOffByScheduler={monitorOffByScheduler})")
         enableScreenSaver(enable)
-        if toggled and (monitorOffByScheduler or monitorClient.isOffTime()):
-            logging.debug("toggleMonitor(): add job")
-            monitorScheduler.addJob((schedule.every(monitorClient.getDelayOffTime()).seconds.tag('off_again'), "off_again"))
-            monitorScheduler.addActionCallback("off_again", monitorOffAgain)
     except Exception as e:
         logging.exception(e)
         
-def monitorOnCallback():
-    global monitorOffByScheduler
-    logging.debug("monitorOnCallback()")
-    monitorClient = Monitor.Client.GetInstance()
-    enableScreenSaver()
-    if not monitorClient.isOn():
-        monitorClient.on()
-        enableScreenSaver(False)
-    monitorOffByScheduler = False
-
-def monitorOffCallback():
-    global monitorOffByScheduler
-    logging.debug("monitorOffCallback()")
-    monitorClient = Monitor.Client.GetInstance()
-    enableScreenSaver()
-    if monitorClient.isOn():
-        monitorClient.off()
-    monitorOffByScheduler = True
-    
-def initMonitorScheduler(monitorScheduler):
-    logging.debug("initMonitorScheduler()")
-    monitorClient = Monitor.Client.GetInstance()
-    logging.debug(f"initMonitorScheduler(offTime={monitorClient.getOffTime()}, onTime={monitorClient.getOnTime()})")
-    if monitorClient.getOffTime() == "" or monitorClient.getOnTime() == "":
-        return
-    
-    if monitorClient.getOffTime() == "test" or monitorClient.getOnTime == "test":
-        now = datetime.now()
-        tdOff = timedelta(minutes=1)
-        tdOn = timedelta(minutes=4)
-        tdOn2 = timedelta(minutes=6)
-        offTime = (now + tdOff).strftime("%H:%M")
-        onTime = (now + tdOn).strftime("%H:%M")
-        onTime2 = (now +tdOn2).strftime("%H:%M")
-    else:
-        offTime = monitorClient.getOffTime()
-        onTime = monitorClient.getOnTime()
-        onTime2 = monitorClient.getOnTime2()
-    offJob = monitorScheduler.addJob((schedule.every().day.at(offTime), "off"))
-    onJobs = monitorScheduler.addJobs(([schedule.every().monday.at(onTime),
-                                       schedule.every().tuesday.at(onTime),
-                                       schedule.every().wednesday.at(onTime),
-                                       schedule.every().thursday.at(onTime),
-                                       schedule.every().friday.at(onTime),
-                                       schedule.every().saturday.at(onTime2),
-                                       schedule.every().sunday.at(onTime2)
-                                       ], "on"))
-    
-    logging.debug(f"initMonitorScheduler(offJob={offJob}, onJob={onJobs})")
-    monitorScheduler.addActionCallback("off", monitorOffCallback)
-    monitorScheduler.addActionCallback("on", monitorOnCallback)
-    
 def startHandler(job):
     global radioPlayer
     global currentsender
@@ -1006,15 +946,10 @@ if __name__ == "__main__":
     monitor.setDimValue(radioPlayer.brightness())
     monitor.dim()
     show_mouse(0)
-    mouseScheduler = SimpleScheduler()
-    mouseScheduler.start()
+    simpleScheduler = SimpleScheduler()
+    simpleScheduler.start()
     RadioPlayer.BlockEvents = False
     
-## start SimpleScheduler for Monitor
-    monitorOffByScheduler = False
-    monitorScheduler = SimpleScheduler()
-##    initMonitorScheduler(monitorScheduler)
-    monitorScheduler.start()
 ## start main loop
     logging.debug("start main loop")
     titleDebuggedOnce = 3
@@ -1031,7 +966,7 @@ if __name__ == "__main__":
                     running=False
                     break;
                 elif event.type == pygame.FINGERDOWN:
-                    init_mouseScheduler(2, mouseScheduler)
+                    init_mouseScheduler(2, simpleScheduler)
                     fingerpos = event.pos if hasattr(event,'pos') else [event.x *screenWidth, event.y * screenHeight]
                     if not check_click(fingerpos):
                         active=True
@@ -1039,7 +974,7 @@ if __name__ == "__main__":
                         buttonDown=True
                     break
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    init_mouseScheduler(1, mouseScheduler)
+                    init_mouseScheduler(1, simpleScheduler)
                     if not check_click(event.pos):
                         active=True
                     else:
@@ -1123,11 +1058,10 @@ if __name__ == "__main__":
     switchMonitor(on = True)
     pygame.quit()
     radioPlayer.stop()
-    mouseScheduler.stop()
+    simpleScheduler.stop()
     radioScheduler.shutdown()
     remoteControl.stop()
     if options.profiling():
         saveStats(profiler, "loopStats.log")
     monitor.light()
-    monitorScheduler.stop()
     sys.exit()
