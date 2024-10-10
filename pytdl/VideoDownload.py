@@ -52,7 +52,6 @@ class VideoDownload:
         return self._title
         
     def run(self):
-        print(f"title: {self._getTitle()}")
         os.system(self._getCommand())
 
 if __name__ == "__main__":
