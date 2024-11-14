@@ -126,6 +126,7 @@ class RadioJob:
         self._type = job['type']
         self._runtime = self.createRunTime(job['runtime'])
         self._sender = job['sender'] if 'sender' in job else None
+        self._volume = job['volume'] if 'volume' in job else None
         self._timeannouncement = job['timeannouncement'] if 'timeannouncement' in job else False
         logging.debug("%s.__init_constructor__(runtime=%s)" % (self.__class__.__name__, str(self._runtime)))
         if "duration" in job:
@@ -139,6 +140,7 @@ class RadioJob:
         self._type = copy.deepcopy(job.type())
         self._runtime = copy.deepcopy(job.runtime())
         self._sender = copy.deepcopy(job.sender())
+        self._volume = copy.deepcopy(job.volume())
         self._timeannouncement = copy.deepcopy(job.timeannouncment())
         self._duration = copy.deepcopy(job.duration())
         
@@ -198,6 +200,9 @@ class RadioJob:
 
     def set_timeannouncement(self, value):
         self._timeannouncement = value
+
+    def set_volume(self, value):
+        self._volume = value
         
     def active(self):
         return self._active
@@ -205,6 +210,9 @@ class RadioJob:
     def duration(self):
         return self._duration
     
+    def runtime(self):
+        return self._runtime
+
     def sender(self):
         return self._sender
 
@@ -214,9 +222,9 @@ class RadioJob:
     def type(self):
         return self._type
 
-    def runtime(self):
-        return self._runtime
-
+    def volume(self):
+        return self._volume
+    
     def jobCallback(self, job):
         logging.debug("%s.jobCallback(job=%s)" % (self.__class__.__name__,str(job)))
         if self._parent != None:
@@ -228,12 +236,13 @@ class RadioJob:
         return None
             
     def __str__(self):
-        return "<%s: name=%s, active=%s, type=%s, runtime=%s, sender=%s>" % (self.__class__.__name__,
+        return "<%s: name=%s, active=%s, type=%s, runtime=%s, sender=%s, volume=%s>" % (self.__class__.__name__,
                                                                   self._name,
                                                                   self._active,
                                                                   self._type,
                                                                   self._runtime,
-                                                                  self._sender)
+                                                                  self._sender,
+                                                                  self._volume if hasattr(self, '_volume') else 'no volume')
     
 class RadioScheduler:
     def __init__(self, configFile):
@@ -335,6 +344,7 @@ class RadioScheduler:
         logging.debug("%s.jobCallback(date=%s, time=%s): create stop job" % (self.__class__.__name__, date, time))
         stopJob.set_runtime(DateRunTime(stopJob,{'date': date, 'time': time }))
         stopJob.set_sender(None)
+        stopJob.set_volume(None)
         stopJob.set_duration(0)
         logging.debug("%s.createStopJob(stopJob=%s)" % (self.__class__.__name__,stopJob))
         stopJob.createJob(self._baseScheduler)
@@ -430,7 +440,7 @@ if __name__ == "__main__":
     radioScheduler = RadioScheduler('/var/radio/conf/waketime.json')
     radioScheduler.start()
     logging.debug(f"radioScheduler={str(radioScheduler)}")
-    job = radioScheduler.getJob('start_workday_at_five')
+    job = radioScheduler.getJob('start_workday_halfpastfive')
     logging.debug(f"job={job}")
     id = job.id()
     logging.debug(f"id={id}")

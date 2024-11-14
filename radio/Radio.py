@@ -530,6 +530,8 @@ def startHandler(job):
     
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
+    if hasattr(job, 'volume'):
+        radioPlayer.setVolume(int(job.volume()))
     switchBrightness()
     active = True
 
