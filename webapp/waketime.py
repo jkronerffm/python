@@ -115,6 +115,7 @@ def createEdit(name):
            'crontime': timecron,
            'duration': job.duration if hasattr(job, 'duration') else "",
            'sender': job.sender if hasattr(job, 'sender') else "",
+           'volume': job.volume if hasattr(job, 'volume') else "",
            'daysOfWeek': retranslate_daysOfWeek(job.runtime.day_of_week) if hasattr(job.runtime, 'day_of_week') else '',
            'timeannouncement': job.timeannouncement if hasattr(job, 'timeannouncement') else ''
         }
@@ -129,6 +130,7 @@ def createEdit(name):
             'crontime': '',
             'duration': '',
             'sender': '',
+            'volume': '',
             'daysOfWeek': '',
             'timeannouncement': ''
         }
@@ -185,20 +187,21 @@ def createRuntime(theType, date, time, days_of_week):
     dictRuntime = { 'date': date, 'time': time[0] } if theType == 'date' else { 'day_of_week': translate_daysOfWeek(days_of_week), 'hour': h, 'minute': m }
     return dictToObj.obj(dictRuntime)
         
-def createJob(name,theType, date, time, days_of_week, duration, sender, timeAnnouncement):
+def createJob(name,theType, date, time, days_of_week, duration, sender, volume, timeAnnouncement):
     data = getData()
     jobDict = {
         'name': name,
         'type': theType,
         'duration': duration,
         'sender': sender,
+        'volume': volume,
         'runtime': createRuntime(theType, date, time, days_of_week),
         'timeannouncement': timeAnnouncement,
         'active': False
     }
     data.scheduler.job.append(dictToObj.obj(jobDict))
     
-def save(name,theType, date, time, days_of_week, duration, sender, timeAnnouncement):
+def save(name,theType, date, time, days_of_week, duration, sender, volume, timeAnnouncement):
     job = getJob(name)
     if job != None:
         job.type = theType
@@ -209,9 +212,10 @@ def save(name,theType, date, time, days_of_week, duration, sender, timeAnnouncem
             job.runtime = dictToObj.obj({'day_of_week': retranslate_daysOfWeek(days_of_week), 'hour': timestr[0], 'minute': timestr[1]})
         job.duration = duration
         job.sender = sender
+        job.volume = volume
         setattr(job, 'timeannouncement', timeAnnouncement)
     else:
-        createJob(name, theType, date, time, days_of_week, duration, sender, timeAnnouncement)
+        createJob(name, theType, date, time, days_of_week, duration, sender, volume, timeAnnouncement)
     writeData()
 
 daysValues = {

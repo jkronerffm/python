@@ -194,9 +194,10 @@ def doSaveWaketime():
     logging.debug(f">> daysOfWeek={daysOfWeek}")
     duration = request.args.get('duration', '1')
     sender = request.args.get('sender', '')
+    volume = request.args.get('volume', '')
     theType= request.args.get('dateOrCron', "cron")
     timeAnnouncement = bool(request.args.get('timeannouncement', 'False')) if 'timeannouncement' in request.args else False
-    waketime.save(name, theType, date, time, daysOfWeek, duration, sender, timeAnnouncement)
+    waketime.save(name, theType, date, time, daysOfWeek, duration, sender, volume, timeAnnouncement)
     flash("Die Weckzeit wurde erfolgreich gespeichert")
     return redirect("/radio/waketime/grid")
 
