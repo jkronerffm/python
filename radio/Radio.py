@@ -53,6 +53,7 @@ MetaEvent = pygame.event.custom_type() + 1
 SettingsEvent = pygame.event.custom_type() + 2
 IrEvent = pygame.event.custom_type() + 3
 RadioEvent = pygame.event.custom_type() + 4
+VolumeEvent = pygame.event.custom_type() + 5
 SettingsFilepath = "/var/radio/conf/radio_settings.json"
 
 class SettingsType(Enum):
@@ -295,6 +296,7 @@ def draw_speaker(surface, pos, factor, color):
     draw_polygon_alpha(surface, color,points)
 
 def draw_Volume_Range(surface, pos, dist, width, yDef, num, color):
+    global volume
     x, y = pos
     xDist, yDist = dist
     px0 = x;
@@ -518,6 +520,7 @@ def startHandler(job):
     global radioPlayer
     global currentsender
     global active
+    global volume
     
     sendername = getSendernameFromJob(job) if haveInternet() else RadioPlayer.LocalList
     activeJob = job.id()
@@ -527,12 +530,15 @@ def startHandler(job):
         radioPlayer.playUrl(url,True)
 
     switchMonitor(True)
+    switchBrightness()
     
     currentsender = radioPlayer.getSenderByName(sendername)
     radioPlayer.play(sendername)
     if hasattr(job, 'volume'):
-        radioPlayer.setVolume(int(job.volume()))
-    switchBrightness()
+        event = pygame.event.Event(VolumeEvent, {'Volume': job.volume()})
+        logging.debug(f"startHandler(...) -> Event(event={event})")
+        pygame.event.post(event)
+
     active = True
 
 def stopHandler(job):
@@ -993,7 +999,7 @@ if __name__ == "__main__":
                     break
                 elif event.type == pygame.FINGERMOTION:
                     if focusOnVolumeSettings and buttonDown and check_clickOnVolumeSettings(event.pos):
-                        volume = get_VolumeVale(event.pos)
+                        volume = get_VolumeValue(event.pos)
                     break
                 elif event.type == pygame.MOUSEBUTTONUP:
                     buttonDown = False
@@ -1050,6 +1056,12 @@ if __name__ == "__main__":
                     logging.debug("####### MediaStopped")
                     if event.PlayerEvent == PlayerEvent.MediaStopped:
                         radioPlayer.repeat(currentsender["name"])
+                elif event.type == VolumeEvent:
+                    logging.debug("####### VolumeEvent")
+                    volume = int(event.Volume)
+                    set_Volume(volume)
+                    newVolume = radioPlayer.getVolume()
+                    logging.debug(f"new volume = {newVolume}")
             pygame.display.flip()
             clock.tick(30)
         except KeyboardInterrupt:
